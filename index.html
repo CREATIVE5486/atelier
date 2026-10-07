@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atelier</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Atelier">
+<meta name="theme-color" content="#18293A">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#EDF0F2; --panel:#FFFFFF; --ink:#18293A; --muted:#5D6B78; --line:#CDD5DC;
+  --accent:#E39B12; --accent-ink:#2A1A00; --ok:#2E7D6B; --alert:#C2412D; --chip:#E2E8EC;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0F1A24; --panel:#172532; --ink:#E4EBF0; --muted:#93A3B1; --line:#2A3B4B;
+  --accent:#F0AE2E; --accent-ink:#2A1A00; --ok:#4FB39A; --alert:#E36A55; --chip:#223443;
+}}
+:root[data-theme="dark"]{
+  --bg:#0F1A24; --panel:#172532; --ink:#E4EBF0; --muted:#93A3B1; --line:#2A3B4B;
+  --accent:#F0AE2E; --accent-ink:#2A1A00; --ok:#4FB39A; --alert:#E36A55; --chip:#223443;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);
+  font:400 16px/1.45 Barlow,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+h1,h2,h3{font-family:"Barlow Condensed","Arial Narrow",Barlow,sans-serif;font-weight:700;margin:0;line-height:1.1}
+h1{font-size:2rem} h2{font-size:1.5rem} h3{font-size:1.15rem;font-weight:600}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+.app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
+nav.side{background:var(--ink);color:var(--bg);padding:1.25rem .75rem;display:flex;flex-direction:column;gap:.25rem}
+nav.side .brand{font-family:"Barlow Condensed",sans-serif;font-size:1.6rem;font-weight:700;padding:0 .5rem 1rem}
+nav button.tab{background:none;border:0;text-align:left;padding:.6rem .75rem;border-radius:6px;color:inherit;opacity:.75;font-weight:500}
+nav button.tab[aria-current="page"]{opacity:1;background:rgba(255,255,255,.1);box-shadow:inset 3px 0 0 var(--accent)}
+.sync{margin-top:auto;font-size:.8rem;opacity:.7;padding:.5rem}
+.sync b{display:inline-block;width:.55rem;height:.55rem;border-radius:50%;background:var(--muted);margin-right:.4rem}
+.sync.on b{background:var(--ok)} .sync.off b{background:var(--alert)}
+
+main{padding:1.5rem clamp(1rem,3vw,2.5rem) 6rem;max-width:1100px;width:100%;min-width:0}
+main a{color:var(--ink);text-underline-offset:2px}
+.head{display:flex;flex-wrap:wrap;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1.25rem}
+.btn{border:0;border-radius:6px;padding:.55rem 1rem;font-weight:600;background:var(--accent);color:var(--accent-ink)}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--alert);border:1px solid var(--alert)}
+.btn.sm{padding:.3rem .65rem;font-size:.9rem}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:1.5rem}
+.kpi{background:var(--panel);padding:1rem}
+.kpi strong{display:block;font-family:"Barlow Condensed",sans-serif;font-size:2rem;line-height:1}
+.kpi span{color:var(--muted);font-size:.9rem}
+.kpi.warn strong{color:var(--alert)}
+
+section.block{margin-bottom:1.75rem}
+section.block > h2{margin-bottom:.6rem}
+.list{background:var(--panel);border:1px solid var(--line);border-radius:8px}
+.row{display:flex;align-items:center;gap:.75rem;padding:.75rem 1rem;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.row.click{cursor:pointer} .row.click:hover{background:var(--chip)}
+.row .grow{flex:1;min-width:0}
+.row .sub{color:var(--muted);font-size:.88rem}
+.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{font-size:.78rem;font-weight:600;padding:.12rem .5rem;border-radius:99px;background:var(--chip);white-space:nowrap}
+.pill.ok{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+.pill.alert{background:color-mix(in srgb,var(--alert) 18%,transparent);color:var(--alert)}
+.pill.acc{background:color-mix(in srgb,var(--accent) 22%,transparent)}
+.bar{height:5px;background:var(--chip);border-radius:3px;overflow:hidden;margin-top:.35rem}
+.bar i{display:block;height:100%;background:var(--ok)}
+.empty{padding:1.5rem 1rem;color:var(--muted)}
+.filters{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.75rem}
+.filters button{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:.25rem .8rem;font-size:.9rem}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.qty{display:flex;align-items:center;gap:.25rem}
+.qty button{width:2rem;height:2rem;border:1px solid var(--line);background:var(--panel);border-radius:6px;font-weight:600}
+
+dialog{border:0;border-radius:12px;padding:0;width:min(560px,94vw);max-height:90vh;background:var(--panel);color:var(--ink)}
+dialog::backdrop{background:rgba(10,20,30,.55)}
+.dlg{padding:1.25rem;display:flex;flex-direction:column;gap:.85rem;overflow:auto;max-height:90vh}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+label{display:flex;flex-direction:column;gap:.25rem;font-size:.88rem;color:var(--muted);font-weight:500}
+input,select,textarea{border:1px solid var(--line);border-radius:6px;padding:.5rem .6rem;background:var(--bg);font-size:1rem;width:100%}
+textarea{min-height:4.5rem;resize:vertical}
+input[type=checkbox]{width:1.2rem;height:1.2rem;flex:none;padding:0}
+.actions{display:flex;gap:.5rem;justify-content:flex-end;flex-wrap:wrap}
+.actions .spacer{flex:1}
+.bomline,.task{display:flex;gap:.5rem;align-items:center}
+.bomline select{flex:1}.bomline input{width:5.5rem}
+.task input[type=text]{flex:1}.task input[type=checkbox]{width:1.2rem;height:1.2rem}
+.x{border:0;background:none;color:var(--muted);font-size:1.3rem;padding:0 .3rem}
+.toast{position:fixed;left:50%;bottom:calc(5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.6rem 1rem;border-radius:8px;font-size:.95rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+
+@media (max-width:760px){
+  .app{grid-template-columns:1fr}
+  nav.side{position:fixed;bottom:0;left:0;right:0;flex-direction:row;justify-content:space-around;padding:.35rem .25rem calc(.35rem + env(safe-area-inset-bottom,0px));z-index:5;gap:0}
+  nav.side .brand,.sync{display:none}
+  nav button.tab{flex:1;text-align:center;font-size:.8rem;padding:.55rem .1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  nav button.tab[aria-current="page"]{box-shadow:inset 0 3px 0 var(--accent)}
+  h1{font-size:1.7rem}
+  .grid2{grid-template-columns:1fr}
+  .mob-sync{display:block}
+}
+nav.side[hidden]{display:none!important}.app:has(nav.side[hidden]){grid-template-columns:1fr}
+.mob-sync{display:none;font-size:.8rem;color:var(--muted)}
+.gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:.4rem}
+.gal button{position:relative;aspect-ratio:1;border:1px solid var(--line);border-radius:6px;padding:0;overflow:hidden;background:var(--chip)}
+.gal img{width:100%;height:100%;object-fit:cover;display:block}
+.gal .vid{position:absolute;right:.3rem;bottom:.3rem;background:rgba(0,0,0,.65);color:#fff;font-size:.72rem;padding:.05rem .35rem;border-radius:4px}
+.gal .ph{display:flex;align-items:center;justify-content:center;height:100%;font-size:.75rem;color:var(--muted);padding:.3rem;text-align:center;word-break:break-all}
+.prog{height:6px;background:var(--chip);border-radius:3px;overflow:hidden}.prog i{display:block;height:100%;background:var(--accent);width:0}
+#viewer{width:min(960px,96vw)} #viewer img,#viewer video{max-width:100%;max-height:70vh;display:block;margin:0 auto;border-radius:6px;background:#000}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--line);border-radius:8px;background:var(--panel)}
+table.ref{border-collapse:collapse;width:100%;font-size:.92rem}
+table.ref th,table.ref td{padding:.5rem .65rem;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.ref th{background:var(--chip);font-weight:600;white-space:nowrap}
+table.ref tr:last-child td{border-bottom:0}
+table.ref td:first-child{white-space:nowrap}
+table.ref td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.refcard{margin-bottom:1.5rem}
+.refcard .meta{display:flex;justify-content:space-between;align-items:baseline;gap:.75rem;margin-bottom:.4rem;flex-wrap:wrap}
+.refcard p{margin:.4rem 0 0;color:var(--muted);font-size:.9rem;max-width:70ch}
+.grid-ed{overflow-x:auto}
+.grid-ed table{border-collapse:collapse}
+.grid-ed td{padding:2px}
+.grid-ed input{min-width:7.5rem;padding:.35rem .45rem;font-size:.92rem}
+.grid-ed thead input{font-weight:600;background:var(--chip)}
+.search{margin-bottom:1rem}
+.back{background:none;border:0;padding:.2rem 0;color:var(--muted);font-weight:600;margin-bottom:.5rem}
+.back:hover{color:var(--ink)}
+.grp{margin:0 0 .4rem;font-size:1rem;color:var(--muted);font-family:Barlow,sans-serif;font-weight:600}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:1.25rem}
+.seg button{border:0;background:var(--panel);padding:.5rem 1.1rem;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.sp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.9rem;margin-bottom:1.75rem}
+.sp{background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden;display:flex;flex-direction:column}
+.sp .ph{aspect-ratio:16/10;background:var(--chip);display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:.8rem;cursor:pointer;border:0;padding:0;width:100%}
+.sp .ph img,.spd .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.sp .bd{padding:.7rem .8rem .85rem;display:flex;flex-direction:column;gap:.35rem}
+.sp h3{cursor:pointer}
+.sci{font-style:italic;color:var(--muted);font-size:.85rem}
+.chips{display:flex;flex-wrap:wrap;gap:.3rem}
+.chips button{border:1px solid var(--line);background:var(--bg);border-radius:99px;padding:.12rem .55rem;font-size:.82rem}
+.chips button:hover{border-color:var(--ink)}
+.lbl{font-size:.8rem;color:var(--muted);font-weight:600}
+.spd .ph{aspect-ratio:16/9;background:var(--chip);border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.spd dl{display:grid;grid-template-columns:auto 1fr;gap:.35rem .9rem;margin:0}
+.spd dt{color:var(--muted);font-size:.88rem;font-weight:600}.spd dd{margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+</head>
+<body>
+<div class="app">
+  <nav class="side" aria-label="Sections">
+    <div class="brand">Atelier</div>
+    <button class="tab" data-view="accueil">Accueil</button>
+    <button class="tab" data-view="projets">Projets</button>
+    <button class="tab" data-view="leurres">Leurres</button>
+    <button class="tab" data-view="stock">Stock</button>
+    <button class="tab" data-view="refs">Références</button>
+    <div class="sync" id="sync"><b></b><span>Connexion…</span></div>
+  </nav>
+  <main id="main"></main>
+</div>
+<dialog id="dlg"><div class="dlg" id="dlgBody"></div></dialog>
+<dialog id="viewer"><div class="dlg" id="viewerBody"></div></dialog>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="especes.js"></script>
+<script>
+/* ---------- Données ---------- */
+const COLS=["projets","articles","leurres","refs"];
+const S={projets:[],articles:[],leurres:[],refs:[]};
+let view="accueil", filtre="tous", store=null, refSel=null;
+
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const eur=n=>(Number(n)||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR"});
+const $=s=>document.querySelector(s);
+
+/* Synchro Firebase (Firestore), privée par utilisateur */
+let F=null, unsubs=[];
+function cloudStore(uidv){
+  const col=c=>F.collection(F.db,"users",uidv,c);
+  return{
+    listen(c,cb,err){return F.onSnapshot(col(c),s=>cb(s.docs.map(d=>({...d.data(),id:d.id}))),err)},
+    ref:(c,id)=>F.doc(F.db,"users",uidv,c,id),
+    async save(c,o){const {id,...b}=o;await F.setDoc(this.ref(c,id),JSON.parse(JSON.stringify(b)))},
+    async update(c,id,f){await F.updateDoc(this.ref(c,id),JSON.parse(JSON.stringify(f)))},
+    async inc(c,id,d){await F.updateDoc(this.ref(c,id),{qte:F.increment(d)})},
+    async batchInc(c,list){const b=F.writeBatch(F.db);list.forEach(([id,d])=>b.update(this.ref(c,id),{qte:F.increment(d)}));await b.commit()},
+    async addMedia(c,id,m){await F.updateDoc(this.ref(c,id),{medias:F.arrayUnion(m)})},
+    async removeMedia(c,id,m){await F.updateDoc(this.ref(c,id),{medias:F.arrayRemove(m)})},
+    async remove(c,id){await F.deleteDoc(this.ref(c,id))}
+  };
+}
+function setSync(state,txt){const el=$("#sync");el.className="sync "+state;el.querySelector("span").textContent=txt;
+  const m=$("#mobSync");if(m)m.textContent=txt}
+function majReseau(){navigator.onLine?setSync("on","Synchronisé"):setSync("off","Pas de réseau")}
+addEventListener("online",majReseau);addEventListener("offline",majReseau);
+
+function boot(f){
+  F=f;
+  if(!F||!F.ok){view=F&&F.err?"erreur":"config";render();return}
+  F.onAuthStateChanged(F.auth,u=>{
+    unsubs.forEach(x=>x());unsubs=[];
+    if(!u){view="login";COLS.forEach(c=>S[c]=[]);render();return}
+    if(["login","chargement"].includes(view))view="accueil";
+    store=cloudStore(u.uid);majReseau();
+    COLS.forEach(c=>unsubs.push(store.listen(c,rows=>{S[c]=rows;render()},e=>setSync("off","Erreur de synchro ("+e.code+")"))));
+    render();
+  });
+}
+function init(){view="chargement";render();
+  const go=()=>{boot(window.FB);OD.init(window.MS_CLIENT_ID)};
+  if(window.FB)go();else addEventListener("fb-ready",go,{once:true});
+  setTimeout(()=>{if(!F){view="erreur";render()}},12000);
+}
+async function save(c,o){try{await store.save(c,o)}catch(e){toast("Échec de l'enregistrement : "+(e.code||"erreur"))}}
+async function remove(c,id){try{await store.remove(c,id)}catch(e){toast("Échec de la suppression")}}
+async function upd(c,id,f){try{await store.update(c,id,f)}catch(e){toast("Échec de l'enregistrement : "+(e.code||"erreur"))}}
+
+async function login(){
+  $("#l_err").textContent="";
+  try{await F.signInWithEmailAndPassword(F.auth,$("#l_mail").value.trim(),$("#l_pw").value)}
+  catch(e){$("#l_err").textContent=["auth/invalid-credential","auth/wrong-password","auth/user-not-found"].includes(e.code)?"Email ou mot de passe incorrect.":"Connexion impossible ("+e.code+")."}
+}
+function logout(){if(confirm("Se déconnecter ?"))F.signOut(F.auth)}
+function exporter(){
+  const blob=new Blob([JSON.stringify({exporte:new Date().toISOString(),...S},null,2)],{type:"application/json"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="atelier-"+new Date().toISOString().slice(0,10)+".json";
+  document.body.appendChild(a);a.click();a.remove();toast("Sauvegarde téléchargée");
+}
+
+/* ---------- Calculs ---------- */
+const art=id=>S.articles.find(a=>a.id===id);
+const coutLeurre=l=>(l.bom||[]).reduce((s,b)=>s+(Number(art(b.articleId)?.prix)||0)*(Number(b.qte)||0),0);
+const stockBas=()=>S.articles.filter(a=>Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil));
+const fabricables=l=>{const r=(l.bom||[]).filter(b=>Number(b.qte)>0).map(b=>Math.floor((Number(art(b.articleId)?.qte)||0)/Number(b.qte)));return r.length?Math.min(...r):0};
+const avancement=p=>{const t=p.taches||[];return t.length?Math.round(100*t.filter(x=>x.fait).length/t.length):0};
+
+/* ---------- Rendu ---------- */
+function render(){
+  document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.view===view?"page":"false"));
+  document.querySelector("nav.side").hidden=["login","config","erreur","chargement"].includes(view);
+  $("#main").innerHTML=({accueil:vAccueil,projets:vProjets,leurres:vLeurres,stock:vStock,refs:vRefs,login:vLogin,config:vConfig,erreur:vErreur,chargement:()=>`<p class="sub">Chargement…</p>`})[view]();
+}
+const head=(t,btn)=>`<div class="head"><div><h1>${t}</h1><div class="mob-sync" id="mobSync">${esc($("#sync span")?.textContent||"")}</div></div>${btn||""}</div>`;
+
+function vAccueil(){
+  const bas=stockBas(), actifs=S.projets.filter(p=>p.statut==="En cours");
+  const valeur=S.articles.reduce((s,a)=>s+(Number(a.qte)||0)*(Number(a.prix)||0),0);
+  const taches=S.projets.flatMap(p=>(p.taches||[]).filter(t=>!t.fait).map(t=>({...t,p})));
+  return head("Accueil",`<div style="display:flex;gap:.5rem;flex-wrap:wrap">${OD.pca&&!OD.compte()?`<button class="btn ghost sm" onclick="OD.connecter()">Connecter OneDrive</button>`:""}<button class="btn ghost sm" onclick="exporter()">Exporter</button><button class="btn ghost sm" onclick="logout()">Déconnexion</button></div>`)+`
+  <div class="kpis">
+    <div class="kpi"><strong>${actifs.length}</strong><span>projets en cours</span></div>
+    <div class="kpi"><strong>${taches.length}</strong><span>tâches ouvertes</span></div>
+    <div class="kpi ${bas.length?"warn":""}"><strong>${bas.length}</strong><span>articles sous le seuil</span></div>
+    <div class="kpi"><strong class="num">${eur(valeur)}</strong><span>valeur du stock</span></div>
+  </div>
+  <section class="block"><h2>À réapprovisionner</h2><div class="list">${
+    bas.length?bas.map(a=>`<div class="row click" onclick="editArticle('${a.id}')"><div class="grow">${esc(a.nom)}<div class="sub">${esc(a.fournisseur||"Fournisseur non renseigné")}</div></div><span class="num pill alert">${a.qte} / ${a.seuil} ${esc(a.unite)}</span></div>`).join("")
+    :`<div class="empty">Tout le stock est au-dessus des seuils.</div>`}</div></section>
+  <section class="block"><h2>Prochaines tâches</h2><div class="list">${
+    taches.length?taches.slice(0,8).map(t=>`<div class="row"><input type="checkbox" aria-label="Terminer" onchange="cocher('${t.p.id}','${t.id}')"><div class="grow">${esc(t.txt)}<div class="sub">${esc(t.p.nom)}</div></div></div>`).join("")
+    :`<div class="empty">Aucune tâche ouverte. Ajoute un projet pour commencer.</div>`}</div></section>`;
+}
+
+function vLogin(){return`<div style="max-width:380px;margin:12vh auto 0"><h1 style="font-size:3rem">Atelier</h1><p class="sub" style="margin:.25rem 0 1.5rem">Projets, stock et leurres.</p>
+  <div style="display:flex;flex-direction:column;gap:.75rem"><label>Email<input id="l_mail" type="email" autocomplete="username"></label>
+  <label>Mot de passe<input id="l_pw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></label>
+  <button class="btn" onclick="login()">Se connecter</button><p id="l_err" style="color:var(--alert);margin:0;min-height:1.4em"></p></div></div>`}
+function vConfig(){return`<div style="max-width:560px;margin:10vh auto 0"><h1>Configuration requise</h1><p>Remplis le fichier <b>config.js</b> avec les clés de ton projet Firebase, puis attends la republication (1 à 2 min) et recharge. Voir LISEZMOI.md.</p></div>`}
+function vErreur(){return`<div style="max-width:560px;margin:10vh auto 0"><h1>Connexion impossible</h1><p>Firebase n'a pas pu se charger. Vérifie ta connexion Wi-Fi ou 4G puis recharge la page.</p><button class="btn" onclick="location.reload()">Recharger</button></div>`}
+
+const DOMAINES=["Leurres","Pêche","Moto","Maison","Bateau","Autre"];
+const STATUTS=["Idée","En cours","En pause","Terminé"];
+function vProjets(){
+  const l=S.projets.filter(p=>filtre==="tous"||p.domaine===filtre).sort((a,b)=>STATUTS.indexOf(a.statut)-STATUTS.indexOf(b.statut));
+  return head("Projets",`<button class="btn" onclick="editProjet()">Nouveau projet</button>`)+filters(DOMAINES)+`<div class="list">${
+    l.length?l.map(p=>{const av=avancement(p);return`<div class="row click" onclick="editProjet('${p.id}')"><div class="grow"><h3>${esc(p.nom)}</h3><div class="sub">${esc(p.domaine)} · ${(p.taches||[]).length} tâches${nbMed(p)}${p.budget?" · budget "+eur(p.budget):""}</div><div class="bar"><i style="width:${av}%"></i></div></div><span class="pill ${p.statut==="En cours"?"acc":p.statut==="Terminé"?"ok":""}">${esc(p.statut)}</span></div>`}).join("")
+    :`<div class="empty">Aucun projet ici. Crée-en un pour suivre tes tâches et ton budget.</div>`}</div>`;
+}
+
+const CATS=["Filament","Résine","Quincaillerie","Hameçons","Peinture","Bavettes","Outillage","Autre"];
+function vStock(){
+  const l=S.articles.filter(a=>filtre==="tous"||a.categorie===filtre).sort((a,b)=>a.nom.localeCompare(b.nom));
+  return head("Stock",`<button class="btn" onclick="editArticle()">Nouvel article</button>`)+filters(CATS)+`<div class="list">${
+    l.length?l.map(a=>{const bas=Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil);return`<div class="row"><div class="grow click" style="cursor:pointer" onclick="editArticle('${a.id}')">${esc(a.nom)}<div class="sub">${esc(a.categorie)}${a.emplacement?" · "+esc(a.emplacement):""}${a.prix?" · "+eur(a.prix)+"/"+esc(a.unite):""}</div></div>
+      <div class="qty"><button aria-label="Retirer 1" onclick="bouger('${a.id}',-1)">−</button><span class="num pill ${bas?"alert":""}" style="min-width:4.5rem;text-align:center">${a.qte} ${esc(a.unite)}</span><button aria-label="Ajouter 1" onclick="bouger('${a.id}',1)">+</button></div></div>`}).join("")
+    :`<div class="empty">Aucun article. Ajoute tes bobines, résines et hameçons avec un seuil d'alerte.</div>`}</div>`;
+}
+
+function vLeurres(){
+  const l=[...S.leurres].sort((a,b)=>(a.nom+a.version).localeCompare(b.nom+b.version));
+  return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+`<div class="list">${
+    l.length?l.map(x=>{const f=fabricables(x);return`<div class="row click" onclick="editLeurre('${x.id}')"><div class="grow"><h3>${esc(x.nom)} <span class="pill">${esc(x.version||"V1")}</span></h3><div class="sub">${[x.corps,x.longueur&&x.longueur+" mm",x.poids&&x.poids+" g",x.nage].filter(Boolean).map(esc).join(" · ")||"Caractéristiques à compléter"}${nbMed(x)}</div></div><div style="text-align:right"><div class="num">${eur(coutLeurre(x))}</div><div class="sub">${f} fabricable${f>1?"s":""}</div></div></div>`}).join("")
+    :`<div class="empty">Aucune fiche. Crée un modèle, liste ses composants, et le coût de revient se calcule depuis ton stock.</div>`}</div>`;
+}
+function filters(opts){return`<div class="filters">${["tous",...opts].map(o=>`<button aria-pressed="${filtre===o}" onclick="filtre='${o}';render()">${o==="tous"?"Tous":o}</button>`).join("")}</div>`}
+
+/* ---------- Actions ---------- */
+document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";refSel=null;render();scrollTo(0,0)});
+function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
+function bouger(id,d){const a=art(id);if(!a)return;if(d<0&&(Number(a.qte)||0)+d<0){toast("Stock déjà à zéro");return}
+  store.inc("articles",id,d).catch(e=>toast("Échec : "+(e.code||"erreur")))}
+function cocher(pid,tid){const p=S.projets.find(x=>x.id===pid);if(!p)return;
+  upd("projets",pid,{taches:p.taches.map(t=>t.id===tid?{...t,fait:true}:t)});toast("Tâche terminée")}
+
+const dlg=$("#dlg"),body=$("#dlgBody");
+const opt=(arr,v)=>arr.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("");
+const val=id=>document.getElementById(id).value.trim();
+const num=id=>Number(document.getElementById(id).value)||0;
+function actions(c,id,onSave){return`<div class="actions">${id?`<button class="btn danger" id="del">Supprimer</button>`:""}<span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" id="ok">Enregistrer</button></div>`}
+function wire(c,id,build){
+  const orig0=id?JSON.parse(JSON.stringify(S[c].find(x=>x.id===id)||{})):null;
+  $("#ok").onclick=async()=>{const o=build();if(!o)return;dlg.close();
+    if(!id){await save(c,{...o,medias:[]});toast("Enregistré");return}
+    const diff={};Object.keys(o).forEach(k=>{if(k!=="id"&&JSON.stringify(o[k])!==JSON.stringify(orig0[k]))diff[k]=o[k]});
+    if(Object.keys(diff).length){await upd(c,id,diff);toast("Enregistré")}else toast("Aucune modification")};
+  if(id)$("#del").onclick=async()=>{if(confirm("Supprimer définitivement ?")){dlg.close();await remove(c,id);toast("Supprimé")}};
+}
+
+function editArticle(id){
+  const a=S.articles.find(x=>x.id===id)||{qte:0,seuil:0,unite:"pcs",categorie:"Autre"};
+  body.innerHTML=`<h2>${id?"Modifier l'article":"Nouvel article"}</h2>
+  <label>Nom<input id="f_nom" value="${esc(a.nom)}" placeholder="ASA noir 1 kg"></label>
+  <div class="grid2"><label>Catégorie<select id="f_cat">${opt(CATS,a.categorie)}</select></label>
+  <label>Unité<input id="f_unite" value="${esc(a.unite)}" placeholder="g, ml, pcs"></label>
+  <label>Quantité<input id="f_qte" type="number" step="any" value="${a.qte}"></label>
+  <label>Seuil d'alerte<input id="f_seuil" type="number" step="any" value="${a.seuil}"></label>
+  <label>Prix unitaire (€)<input id="f_prix" type="number" step="any" value="${a.prix??""}"></label>
+  <label>Emplacement<input id="f_emp" value="${esc(a.emplacement)}" placeholder="Bac 3"></label></div>
+  <label>Fournisseur<input id="f_four" value="${esc(a.fournisseur)}"></label>
+  <label>Notes<textarea id="f_notes">${esc(a.notes)}</textarea></label>`+actions("articles",id);
+  wire("articles",id,()=>{if(!val("f_nom")){toast("Donne un nom à l'article");return}
+    return{id:a.id||uid(),nom:val("f_nom"),categorie:val("f_cat"),unite:val("f_unite")||"pcs",qte:num("f_qte"),seuil:num("f_seuil"),prix:num("f_prix"),emplacement:val("f_emp"),fournisseur:val("f_four"),notes:val("f_notes")}});
+  dlg.showModal();
+}
+
+let tmpTaches=[];
+function editProjet(id){
+  const p=S.projets.find(x=>x.id===id)||{statut:"Idée",domaine:"Leurres",taches:[]};
+  tmpTaches=JSON.parse(JSON.stringify(p.taches||[]));
+  body.innerHTML=`<h2>${id?"Modifier le projet":"Nouveau projet"}</h2>
+  <label>Nom<input id="f_nom" value="${esc(p.nom)}" placeholder="Stickbait 140 mm thon"></label>
+  <div class="grid2"><label>Domaine<select id="f_dom">${opt(DOMAINES,p.domaine)}</select></label>
+  <label>Statut<select id="f_stat">${opt(STATUTS,p.statut)}</select></label>
+  <label>Budget (€)<input id="f_bud" type="number" step="any" value="${p.budget??""}"></label>
+  <label>Échéance<input id="f_ech" type="date" value="${esc(p.echeance)}"></label></div>
+  <div><h3 style="margin-bottom:.4rem">Tâches</h3><div id="taches" style="display:flex;flex-direction:column;gap:.4rem"></div>
+  <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpTaches.push({id:uid(),txt:'',fait:false});drawTaches(true)">Ajouter une tâche</button></div>
+  ${mediaBlock()}
+  <label>Notes<textarea id="f_notes">${esc(p.notes)}</textarea></label>`+actions("projets",id);
+  drawTaches();drawMedia("projets",id);
+  wire("projets",id,()=>{if(!val("f_nom")){toast("Donne un nom au projet");return}
+    return{id:p.id||uid(),nom:val("f_nom"),domaine:val("f_dom"),statut:val("f_stat"),budget:num("f_bud"),echeance:val("f_ech"),notes:val("f_notes"),taches:tmpTaches.filter(t=>t.txt.trim())}});
+  dlg.showModal();
+}
+function drawTaches(focus){
+  $("#taches").innerHTML=tmpTaches.map((t,i)=>`<div class="task"><input type="checkbox" ${t.fait?"checked":""} onchange="tmpTaches[${i}].fait=this.checked" aria-label="Fait"><input type="text" value="${esc(t.txt)}" oninput="tmpTaches[${i}].txt=this.value" placeholder="Décrire la tâche"><button class="x" aria-label="Retirer" onclick="tmpTaches.splice(${i},1);drawTaches()">×</button></div>`).join("");
+  if(focus){const ins=$("#taches").querySelectorAll("input[type=text]");ins[ins.length-1]?.focus()}
+}
+
+let tmpBom=[];
+function editLeurre(id){
+  const l=S.leurres.find(x=>x.id===id)||{version:"V1",bom:[]};
+  tmpBom=JSON.parse(JSON.stringify(l.bom||[]));
+  body.innerHTML=`<h2>${id?"Fiche leurre":"Nouvelle fiche leurre"}</h2>
+  <div class="grid2"><label>Modèle<input id="f_nom" value="${esc(l.nom)}" placeholder="Stickbait thon"></label>
+  <label>Version<input id="f_ver" value="${esc(l.version)}"></label>
+  <label>Corps (matière)<input id="f_corps" value="${esc(l.corps)}" placeholder="ASA, PETG…"></label>
+  <label>Type de nage<input id="f_nage" value="${esc(l.nage)}" placeholder="Wobbling, glissé…"></label>
+  <label>Longueur (mm)<input id="f_long" type="number" value="${l.longueur??""}"></label>
+  <label>Poids (g)<input id="f_poids" type="number" step="any" value="${l.poids??""}"></label></div>
+  <div><h3 style="margin-bottom:.4rem">Nomenclature (par leurre)</h3><div id="bom" style="display:flex;flex-direction:column;gap:.4rem"></div>
+  <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpBom.push({articleId:'',qte:1});drawBom()">Ajouter un composant</button>
+  <p class="sub" id="cout" style="margin:.5rem 0 0"></p></div>
+  <label>Essais et observations<textarea id="f_notes" placeholder="Nage à 6 nœuds, profondeur, captures…">${esc(l.notes)}</textarea></label>
+  ${mediaBlock()}
+  ${id?`<button class="btn ghost" id="fab">Fabriquer 1 (déduit le stock)</button>`:""}`+actions("leurres",id);
+  drawBom();drawMedia("leurres",id);
+  wire("leurres",id,()=>{if(!val("f_nom")){toast("Donne un nom au modèle");return}
+    return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:Number(b.qte)||0}))}});
+  if(id)$("#fab").onclick=async()=>{
+    const manque=(l.bom||[]).filter(b=>(Number(art(b.articleId)?.qte)||0)<Number(b.qte));
+    if(manque.length){toast("Stock insuffisant : "+manque.map(b=>art(b.articleId)?.nom||"?").join(", "));return}
+    dlg.close();
+    try{await store.batchInc("articles",l.bom.map(b=>[b.articleId,-Number(b.qte)]));toast("Stock déduit pour 1 "+l.nom)}
+    catch(e){toast("Échec, stock inchangé ("+(e.code||"erreur")+")")}
+  };
+  dlg.showModal();
+}
+function drawBom(){
+  const opts=id=>`<option value="">Choisir un article</option>`+S.articles.map(a=>`<option value="${a.id}" ${a.id===id?"selected":""}>${esc(a.nom)} (${esc(a.unite)})</option>`).join("");
+  $("#bom").innerHTML=S.articles.length?tmpBom.map((b,i)=>`<div class="bomline"><select onchange="tmpBom[${i}].articleId=this.value;majCout()" aria-label="Article">${opts(b.articleId)}</select><input type="number" step="any" value="${b.qte}" oninput="tmpBom[${i}].qte=this.value;majCout()" aria-label="Quantité"><button class="x" aria-label="Retirer" onclick="tmpBom.splice(${i},1);drawBom()">×</button></div>`).join(""):`<p class="sub">Crée d'abord tes articles dans le Stock.</p>`;
+  majCout();
+}
+function majCout(){$("#cout").textContent="Coût de revient : "+eur(coutLeurre({bom:tmpBom}))}
+
+
+
+/* ---------- Références : tableaux libres ---------- */
+const MODELES=[
+ {cle:"hamecons-taille",titre:"Hameçons selon la taille du leurre (triple et simple)",categorie:"Hameçons",
+  description:"Stickbaits et poppers à 2 attaches. Choisis la ligne d'après le POIDS du leurre : la longueur n'est qu'indicative (stickbait fin type Carpenter ; un popper trapu sera plus court à poids égal). Triple : chaque hameçon pèse 8 à 10 % du poids du leurre. Simple : ouverture environ 1,6 fois celle du triple remplacé. Ces deux règles sont déduites des préconisations Carpenter et des cotes Owner et BKK.",
+  colonnes:["Longueur stickbait (mm, indicatif)","Poids du leurre (g)","Triple Owner ST-66","Simple inline BKK Lone Diablo","Ouverture triple / simple (mm)","Poids triple / simple (g)"],
+  lignes:[["120–135","20–30","#2 à #1","2/0–3/0","9,4–10,5 / 15,7–17","1,7–2,2 / 1,4–2,1"],["135–155","30–45","1/0","3/0–4/0","11,7 / 17–19,5","3,1 / 2,1–2,7"],["155–170","45–60","2/0","5/0","13,4 / 21,6","4,7 / 3,8"],["170–190","60–80","3/0","7/0","15,1 / 24,5","6,7 / 4,9"],["190–210","80–110","4/0","9/0–11/0","17,5 / 26,2–28,9","9 / 7–9,2"],["210–230","110–150","5/0","11/0–13/0","20,5 / 28,9–33,2","11,5 / 9,2–11,3"]],
+  source:"https://www.pechextreme.com/en/inline-hooks/2162-bkk-lone-diablo-8091-hg.html",
+  notes:"Un simple pèse 25 à 40 % de moins que le triple équivalent : le leurre flotte plus haut et sa nage change. Compense avec un anneau plus lourd ou un peu de lest, et reteste la nage. Espacement : la distance entre deux attaches doit dépasser la hauteur d'un hameçon (ST-66 4/0 : 47,9 mm ; Lone Diablo 9/0 : 51,5 mm), sinon ils s'emmêlent. Cotes ST-66 : pechextreme.com/en/treble/198-owner-st66.html"},
+ {cle:"carpenter-bluefish",titre:"Préconisations fabricant : Carpenter Blue Fish",categorie:"Hameçons",
+  description:"Valeurs publiées pour des stickbaits de référence, utiles pour caler tes propres modèles par comparaison.",
+  colonnes:["Modèle","Longueur (mm)","Poids (g)","Hameçons préconisés","Anneau brisé"],
+  lignes:[["BF75-180","180","62–75","Triples 2/0–3/0 avant, 1/0–2/0 arrière ; simples inline 5/0–7/0","—"],["BF100-200","200","95","≈ 9 g par hameçon (ST-66 4/0)","Carpenter SR 250 lb"],["BF140-225","225","137","≈ 11 g par hameçon (ST-66 5/0)","Carpenter SR 350 lb"]],
+  source:"https://gtfightclub.com/products/carpenter-blue-fish-bf100-topwater-stickbait-lures",
+  notes:"Sources : fiches produit GT Fight Club (BF100-200, BF140-225) et Pêchextrême (BF75-180)."}
+];
+function vRefs(){
+  if(refSel==="especes")return vEspeces();
+  if(refSel){const r=S.refs.find(x=>x.id===refSel);if(r)return `<button class="back" onclick="refSel=null;render()">‹ Références</button>`+refCard(r);refSel=null}
+  const q=(window._rq||"").toLowerCase();
+  const items=[{id:"especes",titre:"Proies et prédateurs (France)",categorie:"Pêche",description:"Ce que mange chaque espèce, en mer et en eau douce, avec photos et robe des poissons fourrage.",n:ESP.length+" espèces"},
+    ...S.refs.map(r=>({id:r.id,titre:r.titre,categorie:r.categorie||"Divers",description:r.description||"",n:(r.lignes||[]).length+" ligne"+((r.lignes||[]).length>1?"s":"")}))]
+    .filter(r=>!q||(r.titre+" "+r.categorie+" "+r.description).toLowerCase().includes(q));
+  const cats=[...new Set(items.map(i=>i.categorie))].sort((a,b)=>a.localeCompare(b));
+  const manquants=MODELES.filter(m=>!S.refs.some(r=>r.cle===m.cle));
+  return head("Références",`<button class="btn" onclick="editRef()">Nouveau tableau</button>`)+
+  `<input class="search" type="search" placeholder="Rechercher un sujet" value="${esc(window._rq||"")}" oninput="window._rq=this.value;clearTimeout(window._rt);window._rt=setTimeout(()=>{render();const i=$('.search');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)" aria-label="Rechercher">`+
+  (manquants.length?`<div class="list" style="margin-bottom:1.25rem"><div class="row"><div class="grow">Tableaux de départ disponibles<div class="sub">${manquants.map(m=>esc(m.titre)).join(", ")}</div></div><button class="btn ghost sm" onclick="ajouterModeles()">Ajouter</button></div></div>`:"")+
+  (items.length?cats.map(c=>`<section class="block"><h2 class="grp">${esc(c)}</h2><div class="list">${items.filter(i=>i.categorie===c).sort((a,b)=>a.titre.localeCompare(b.titre)).map(i=>`<div class="row click" role="button" tabindex="0" onclick="ouvrirRef('${i.id}')" onkeydown="if(event.key==='Enter')ouvrirRef('${i.id}')"><div class="grow"><h3>${esc(i.titre)}</h3>${i.description?`<div class="sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.description)}</div>`:""}</div><span class="sub num">${esc(i.n)}</span></div>`).join("")}</div></section>`).join("")
+  :`<div class="list"><div class="empty">Aucun sujet ne correspond.</div></div>`);
+}
+function ouvrirRef(id){refSel=id;render();scrollTo(0,0)}
+
+/* ---------- Proies et prédateurs ---------- */
+const ESP=window.ESPECES||[];
+const espById=id=>ESP.find(e=>e.id===id);
+const mangePar=id=>ESP.filter(e=>(e.mange||[]).includes(id));
+let milieu="mer";
+function vEspeces(){
+  const L=ESP.filter(e=>e.milieu===milieu);
+  const preds=L.filter(e=>e.roles.includes("predateur")),proies=L.filter(e=>e.roles.includes("proie"));
+  const chips=ids=>`<div class="chips">${ids.map(id=>{const e=espById(id);return e?`<button type="button" onclick="event.stopPropagation();ficheEsp('${e.id}')">${esc(e.nom)}</button>`:""}).join("")}</div>`;
+  const card=(e,mode)=>`<article class="sp"><button type="button" class="ph" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}" onclick="ficheEsp('${e.id}')" aria-label="Fiche ${esc(e.nom)}">${esc(e.nom)}</button>
+    <div class="bd"><h3 onclick="ficheEsp('${e.id}')">${esc(e.nom)}</h3><div class="sci">${esc(e.sci)}, ${esc(e.taille)}</div>
+    ${mode==="pred"?((e.mange||[]).length?`<span class="lbl">Mange</span>${chips(e.mange)}`:`<span class="lbl">Mange</span><div class="sub">${esc(e.autres)}</div>`)
+      :(mangePar(e.id).length?`<span class="lbl">Mangé par</span>${chips(mangePar(e.id).map(x=>x.id))}`:"")}</div></article>`;
+  setTimeout(chargerPhotos,0);
+  return `<button class="back" onclick="refSel=null;render()">‹ Références</button>`+head("Proies et prédateurs")+
+  `<div class="seg" role="group" aria-label="Milieu"><button aria-pressed="${milieu==="mer"}" onclick="milieu='mer';render()">Mer</button><button aria-pressed="${milieu==="douce"}" onclick="milieu='douce';render()">Eau douce</button></div>
+  <section><h2 style="margin-bottom:.6rem">Prédateurs</h2><div class="sp-grid">${preds.map(e=>card(e,"pred")).join("")}</div></section>
+  <section><h2 style="margin-bottom:.25rem">Poissons fourrage</h2><p class="sub" style="margin:0 0 .75rem">Les petits poissons chassés, avec leur robe : utile pour peindre tes leurres.</p><div class="sp-grid">${proies.map(e=>card(e,"proie")).join("")}</div></section>
+  <p class="sub">Photos et fiches : Wikipédia (Wikimedia Commons). Régimes alimentaires : synthèse des fiches Wikipédia de chaque espèce, à compléter par tes observations.</p>`;
+}
+function ficheEsp(id){
+  const e=espById(id);if(!e)return;
+  const chips=ids=>ids.length?`<div class="chips">${ids.map(i=>{const x=espById(i);return x?`<button type="button" onclick="ficheEsp('${x.id}')">${esc(x.nom)}</button>`:""}).join("")}</div>`:"";
+  const par=mangePar(e.id);
+  const vb=$("#viewerBody");
+  vb.innerHTML=`<div class="spd" style="display:flex;flex-direction:column;gap:.8rem"><div class="ph" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}">${esc(e.nom)}</div>
+  <div><h2>${esc(e.nom)}</h2><div class="sci">${esc(e.sci)}</div></div>
+  <dl><dt>Taille</dt><dd>${esc(e.taille)}</dd><dt>Milieu</dt><dd>${e.milieu==="mer"?"Mer":"Eau douce"}</dd><dt>Habitat</dt><dd>${esc(e.habitat||"")}</dd>${e.robe?`<dt>Robe</dt><dd>${esc(e.robe)}</dd>`:""}</dl>
+  ${e.roles.includes("predateur")?`<div><span class="lbl">Poissons mangés</span>${(e.mange||[]).length?chips(e.mange):`<div class="sub">Peu ou pas de poissons</div>`}${e.autres?`<p style="margin:.4rem 0 0">${esc(e.autres)}</p>`:""}</div>`:""}
+  ${par.length?`<div><span class="lbl">Mangé par</span>${chips(par.map(x=>x.id))}</div>`:""}
+  ${e.conseil?`<p style="margin:0"><b>Pour tes leurres :</b> ${esc(e.conseil)}</p>`:""}
+  <div class="actions"><a class="btn ghost" href="https://fr.wikipedia.org/wiki/${encodeURIComponent(e.wiki)}" target="_blank" rel="noopener">Fiche Wikipédia</a><button class="btn" onclick="viewer.close()">Fermer</button></div></div>`;
+  if(!viewer.open)viewer.showModal();
+  vb.scrollTop=0;chargerPhotos();
+}
+const PH={};
+function photoCache(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem("ph:"+k));localStorage.setItem("ph:"+k,JSON.stringify(v))}catch(e){return null}}
+async function photoEsp(sci,wiki){
+  if(PH[sci]!==undefined)return PH[sci];
+  const c=photoCache(sci);if(c&&c.t>Date.now()-30*864e5)return PH[sci]=c.u;
+  const essai=async u=>{try{const r=await fetch(u);if(!r.ok)return"";const j=await r.json();return j.thumbnail?.source||j.originalimage?.source||""}catch(e){return""}};
+  PH[sci]=new Promise(async res=>{
+    let u=await essai("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(sci.replace(/ /g,"_")));
+    if(!u&&wiki)u=await essai("https://fr.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(wiki));
+    photoCache(sci,{u,t:Date.now()});PH[sci]=u;res(u);
+  });
+  return PH[sci];
+}
+function chargerPhotos(){
+  document.querySelectorAll(".ph[data-sci]:not([data-ok])").forEach(async el=>{
+    el.setAttribute("data-ok","1");
+    const u=await photoEsp(el.dataset.sci,el.dataset.wiki);
+    if(u&&el.isConnected){const img=new Image();img.alt=el.textContent.trim();img.loading="lazy";img.onload=()=>{el.textContent="";el.appendChild(img)};img.src=u}
+  });
+}
+function refCard(r){
+  const cols=r.colonnes||[],rows=(r.lignes||[]).map(x=>x.v||[]);
+  const num=v=>/^[\d\s.,–\-~≈#\/]+$/.test(String(v).trim());
+  return`<section class="refcard"><div class="meta"><h2>${esc(r.titre)}</h2><span><span class="pill">${esc(r.categorie||"Divers")}</span> <button class="btn ghost sm" onclick="editRef('${r.id}')">Modifier</button></span></div>
+  ${r.description?`<p style="margin:0 0 .6rem">${esc(r.description)}</p>`:""}
+  <div class="tw"><table class="ref"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.map(rw=>`<tr>${cols.map((c,i)=>`<td class="${num(rw[i]??"")?"n":""}">${esc(rw[i]??"")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
+  ${r.notes?`<p>${esc(r.notes)}</p>`:""}
+  ${r.source?`<p>Source : ${/^https?:\/\//.test(r.source)?`<a href="${esc(r.source)}" target="_blank" rel="noopener">${esc(r.source.replace(/^https?:\/\/(www\.)?/,"").split("/")[0])}</a>`:esc(r.source)}</p>`:""}
+  ${(r.medias||[]).length?`<p>${r.medias.length} média${r.medias.length>1?"s":""} attaché${r.medias.length>1?"s":""} (ouvre « Modifier »)</p>`:""}</section>`;
+}
+async function ajouterModeles(){
+  for(const m of MODELES.filter(m=>!S.refs.some(r=>r.cle===m.cle)))
+    await save("refs",{id:"modele-"+m.cle,...m,lignes:m.lignes.map(v=>({v})),medias:[]});
+  toast("Tableaux ajoutés");
+}
+let tmpRef=null;
+function editRef(id){
+  const r=S.refs.find(x=>x.id===id)||{categorie:"Divers",colonnes:["Colonne 1","Colonne 2"],lignes:[{v:["",""]}]};
+  tmpRef={colonnes:[...(r.colonnes||[])],lignes:(r.lignes||[]).map(x=>[...(x.v||[])])};
+  const cats=[...new Set(["Hameçons","Leurres","Impression 3D","Résines","Matériaux","Pêche","Divers",...S.refs.map(x=>x.categorie).filter(Boolean)])];
+  body.innerHTML=`<h2>${id?"Modifier le tableau":"Nouveau tableau"}</h2>
+  <label>Titre<input id="f_nom" value="${esc(r.titre)}" placeholder="Taille d'hameçon selon le leurre"></label>
+  <label>Catégorie<input id="f_cat" list="cats" value="${esc(r.categorie)}"><datalist id="cats">${cats.map(c=>`<option value="${esc(c)}">`).join("")}</datalist></label>
+  <label>Description<textarea id="f_desc" placeholder="À quoi sert ce tableau, quelle règle il applique">${esc(r.description)}</textarea></label>
+  <div><h3 style="margin-bottom:.4rem">Tableau</h3><div class="grid-ed" id="grid"></div>
+  <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem"><button type="button" class="btn ghost sm" onclick="gridOp('row+')">Ajouter une ligne</button><button type="button" class="btn ghost sm" onclick="gridOp('col+')">Ajouter une colonne</button><button type="button" class="btn ghost sm" onclick="gridOp('col-')">Retirer la dernière colonne</button></div></div>
+  <label>Notes<textarea id="f_notes">${esc(r.notes)}</textarea></label>
+  <label>Source (lien ou référence)<input id="f_src" value="${esc(r.source)}" placeholder="https://…"></label>
+  ${mediaBlock()}`+actions("refs",id);
+  drawGrid();drawMedia("refs",id);
+  wire("refs",id,()=>{if(!val("f_nom")){toast("Donne un titre au tableau");return}
+    const n=tmpRef.colonnes.length;
+    return{id:r.id||uid(),titre:val("f_nom"),categorie:val("f_cat")||"Divers",description:val("f_desc"),notes:val("f_notes"),source:val("f_src"),
+      colonnes:tmpRef.colonnes.map((c,i)=>c.trim()||"Colonne "+(i+1)),
+      lignes:tmpRef.lignes.filter(l=>l.some(x=>String(x||"").trim())).map(l=>({v:Array.from({length:n},(_,i)=>String(l[i]??"").trim())}))}});
+  dlg.showModal();
+}
+function drawGrid(){
+  const g=$("#grid"),n=tmpRef.colonnes.length;
+  g.innerHTML=`<table><thead><tr>${tmpRef.colonnes.map((c,i)=>`<td><input value="${esc(c)}" oninput="tmpRef.colonnes[${i}]=this.value" aria-label="Titre de la colonne ${i+1}"></td>`).join("")}<td></td></tr></thead>
+  <tbody>${tmpRef.lignes.map((l,r)=>`<tr>${Array.from({length:n},(_,i)=>`<td><input value="${esc(l[i]??"")}" oninput="tmpRef.lignes[${r}][${i}]=this.value" aria-label="Ligne ${r+1}, ${esc(tmpRef.colonnes[i])}"></td>`).join("")}<td><button type="button" class="x" aria-label="Supprimer la ligne ${r+1}" onclick="gridOp('row-',${r})">×</button></td></tr>`).join("")}</tbody></table>`;
+}
+function gridOp(op,i){
+  const t=tmpRef;
+  if(op==="row+"){t.lignes.push(Array(t.colonnes.length).fill(""));drawGrid();const ins=$("#grid tbody tr:last-child input");ins&&ins.focus();return}
+  if(op==="row-")t.lignes.splice(i,1);
+  if(op==="col+"){t.colonnes.push("Colonne "+(t.colonnes.length+1));t.lignes.forEach(l=>l.push(""))}
+  if(op==="col-"&&t.colonnes.length>1){t.colonnes.pop();t.lignes.forEach(l=>l.length=t.colonnes.length)}
+  drawGrid();
+}
+
+/* ---------- OneDrive : photos et vidéos ---------- */
+const nbMed=o=>{const n=(o.medias||[]).length;return n?" · "+n+" média"+(n>1?"s":""):""};
+const OD={
+  pca:null, scopes:["Files.ReadWrite.AppFolder"], cache:{},
+  async init(clientId){
+    if(!clientId||!window.msal)return;
+    this.pca=new msal.PublicClientApplication({auth:{clientId,authority:"https://login.microsoftonline.com/consumers",redirectUri:location.origin+location.pathname},cache:{cacheLocation:"localStorage"}});
+    try{await this.pca.initialize();await this.pca.handleRedirectPromise()}catch(e){toast("Connexion OneDrive : "+(e.errorCode||e.message))}
+    render();
+  },
+  compte(){return this.pca?this.pca.getAllAccounts()[0]:null},
+  connecter(){if(!this.pca){toast("OneDrive non configuré (voir LISEZMOI)");return}this.pca.loginRedirect({scopes:this.scopes})},
+  async token(){const account=this.compte();if(!account){this.connecter();throw new Error("non connecté")}
+    try{return (await this.pca.acquireTokenSilent({scopes:this.scopes,account})).accessToken}
+    catch(e){await this.pca.acquireTokenRedirect({scopes:this.scopes,account});throw e}},
+  async api(path,opt={}){const t=await this.token();
+    const r=await fetch("https://graph.microsoft.com/v1.0"+path,{...opt,headers:{Authorization:"Bearer "+t,...(opt.headers||{})}});
+    if(!r.ok)throw new Error("OneDrive "+r.status);return r.status===204?null:r.json()},
+  chemin:p=>p.split("/").map(encodeURIComponent).join("/"),
+  async envoyer(fichier,nom,dossier,onProg){
+    const p=this.chemin(dossier+"/"+nom);
+    if(fichier.size<4e6){onProg(.3);const it=await this.api("/me/drive/special/approot:/"+p+":/content",{method:"PUT",body:fichier});onProg(1);return it}
+    const sess=await this.api("/me/drive/special/approot:/"+p+":/createUploadSession",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item:{"@microsoft.graph.conflictBehavior":"rename"}})});
+    const CH=32*327680;let it=null;   // morceaux de 10 Mo
+    for(let o=0;o<fichier.size;o+=CH){const fin=Math.min(o+CH,fichier.size);
+      const r=await fetch(sess.uploadUrl,{method:"PUT",headers:{"Content-Range":`bytes ${o}-${fin-1}/${fichier.size}`},body:fichier.slice(o,fin)});
+      if(!r.ok)throw new Error("envoi interrompu ("+r.status+")");
+      onProg(fin/fichier.size);if(r.status===200||r.status===201)it=await r.json()}
+    return it},
+  async vignette(id){if(this.cache["t"+id]!==undefined)return this.cache["t"+id];
+    const r=await this.api("/me/drive/items/"+id+"/thumbnails");return this.cache["t"+id]=r.value?.[0]?.medium?.url||""},
+  async item(id){return await this.api("/me/drive/items/"+id)}
+};
+async function compresser(f){
+  if(!f.type.startsWith("image/")||f.type==="image/gif")return f;
+  try{const bmp=await createImageBitmap(f);const k=Math.min(1,2048/Math.max(bmp.width,bmp.height));
+    const c=document.createElement("canvas");c.width=Math.round(bmp.width*k);c.height=Math.round(bmp.height*k);
+    c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+    const b=await new Promise(r=>c.toBlob(r,"image/jpeg",.82));return b&&b.size<f.size?b:f}catch(e){return f}
+}
+const mediaBlock=()=>OD.pca?`<div><h3 style="margin-bottom:.4rem">Photos et vidéos</h3><div id="medias"></div></div>`:"";
+function drawMedia(c,id){
+  const box=$("#medias");if(!box)return;
+  if(!id){box.innerHTML=`<p class="sub">Enregistre d'abord la fiche pour ajouter des médias.</p>`;return}
+  if(!OD.pca){box.innerHTML=`<p class="sub">OneDrive non configuré (voir LISEZMOI).</p>`;return}
+  if(!OD.compte()){box.innerHTML=`<button class="btn ghost sm" onclick="OD.connecter()">Connecter OneDrive</button>`;return}
+  const ms=(S[c].find(x=>x.id===id)||{}).medias||[];
+  box.innerHTML=`<div class="gal">${ms.map((m,i)=>`<button type="button" onclick="voirMedia('${c}','${id}',${i})" aria-label="Ouvrir ${esc(m.nom)}"><span class="ph" data-tid="${esc(m.id)}">${esc(m.nom)}</span>${m.video?`<span class="vid">vidéo</span>`:""}</button>`).join("")}</div>
+  <div id="envoi" style="margin:.5rem 0"></div>
+  <label class="btn ghost sm" style="display:inline-block;color:var(--ink);cursor:pointer">Ajouter des photos ou vidéos<input type="file" accept="image/*,video/*" multiple hidden onchange="ajouterMedias('${c}','${id}',this.files)"></label>`;
+  ms.forEach(m=>OD.vignette(m.id).then(u=>{const el=box.querySelector(`[data-tid="${CSS.escape(m.id)}"]`);if(u&&el)el.outerHTML=`<img src="${esc(u)}" alt="${esc(m.nom)}" loading="lazy">`}).catch(()=>{}));
+}
+async function ajouterMedias(c,id,files){
+  const zone=$("#envoi");
+  for(const f0 of [...files]){
+    zone.innerHTML=`<div class="sub">Envoi de ${esc(f0.name)}…</div><div class="prog"><i id="pr"></i></div>`;
+    try{const f=await compresser(f0),video=f0.type.startsWith("video/");
+      let nom=Date.now()+"-"+f0.name.replace(/[^\w.\-]+/g,"_");if(f!==f0)nom=nom.replace(/\.\w+$/,"")+".jpg";
+      const it=await OD.envoyer(f,nom,c+"/"+id,p=>{const b=$("#pr");if(b)b.style.width=Math.round(p*100)+"%"});
+      await store.addMedia(c,id,{id:it.id,nom:f0.name,video,taille:it.size||f.size,date:new Date().toISOString()});
+    }catch(e){toast("Échec de l'envoi de "+f0.name+" : "+e.message)}
+  }
+  zone.innerHTML="";setTimeout(()=>drawMedia(c,id),400);
+}
+const viewer=$("#viewer");
+async function voirMedia(c,id,i){
+  const m=((S[c].find(x=>x.id===id)||{}).medias||[])[i];if(!m)return;
+  const vb=$("#viewerBody");vb.innerHTML=`<p class="sub">Chargement…</p>`;viewer.showModal();
+  try{const it=await OD.item(m.id),u=it["@microsoft.graph.downloadUrl"];
+    vb.innerHTML=`<h3>${esc(m.nom)}</h3>${m.video?`<video src="${esc(u)}" controls playsinline></video>`:`<img src="${esc(u)}" alt="${esc(m.nom)}">`}
+    <p class="sub" style="margin:0">${((m.taille||0)/1048576).toFixed(1)} Mo, ajouté le ${new Date(m.date).toLocaleDateString("fr-FR")}</p>
+    <div class="actions"><button class="btn danger" id="vdel">Supprimer</button><span class="spacer"></span><a class="btn ghost" href="${esc(it.webUrl)}" target="_blank" rel="noopener">Ouvrir dans OneDrive</a><button class="btn" onclick="viewer.close()">Fermer</button></div>`;
+    $("#vdel").onclick=async()=>{if(!confirm("Supprimer ce média ? Il ira dans la corbeille OneDrive."))return;
+      try{await OD.api("/me/drive/items/"+m.id,{method:"DELETE"})}catch(e){}
+      await store.removeMedia(c,id,m);viewer.close();toast("Média supprimé");setTimeout(()=>drawMedia(c,id),400)};
+  }catch(e){vb.innerHTML=`<p>Impossible d'ouvrir ce média : ${esc(e.message)}</p><div class="actions"><button class="btn" onclick="viewer.close()">Fermer</button></div>`}
+}
+init();
+</script>
+<script src="config.js"></script>
+<script type="module">
+const firebaseConfig = window.ATELIER_CONFIG?.firebase || {};
+window.MS_CLIENT_ID = window.ATELIER_CONFIG?.microsoftClientId || "";
+const V="10.12.2", B="https://www.gstatic.com/firebasejs/"+V+"/";
+try{
+  if(!firebaseConfig.apiKey){ window.FB={ok:false}; }
+  else{
+    const [{initializeApp},fs,au]=await Promise.all([import(B+"firebase-app.js"),import(B+"firebase-firestore.js"),import(B+"firebase-auth.js")]);
+    const app=initializeApp(firebaseConfig);
+    window.FB={ok:true,db:fs.getFirestore(app),collection:fs.collection,doc:fs.doc,setDoc:fs.setDoc,deleteDoc:fs.deleteDoc,onSnapshot:fs.onSnapshot,updateDoc:fs.updateDoc,increment:fs.increment,arrayUnion:fs.arrayUnion,arrayRemove:fs.arrayRemove,writeBatch:fs.writeBatch,
+      auth:au.getAuth(app),onAuthStateChanged:au.onAuthStateChanged,signInWithEmailAndPassword:au.signInWithEmailAndPassword,signOut:au.signOut};
+  }
+}catch(e){ window.FB={ok:false,err:String(e)}; }
+dispatchEvent(new Event("fb-ready"));
+if("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
