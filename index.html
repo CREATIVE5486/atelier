@@ -39,7 +39,7 @@ button{cursor:pointer}
 :focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 
 .app{display:grid;grid-template-columns:220px 1fr;min-height:100vh}
-nav.side{background:var(--ink);color:var(--bg);padding:1.25rem .75rem;display:flex;flex-direction:column;gap:.25rem}
+nav.side{background:var(--nav);color:#EDF0F2;padding:1.25rem .75rem;display:flex;flex-direction:column;gap:.25rem}
 nav.side .brand{font-family:"Barlow Condensed",sans-serif;font-size:1.6rem;font-weight:700;padding:0 .5rem 1rem}
 nav button.tab{background:none;border:0;text-align:left;padding:.6rem .75rem;border-radius:6px;color:inherit;opacity:.75;font-weight:500}
 nav button.tab[aria-current="page"]{opacity:1;background:rgba(255,255,255,.1);box-shadow:inset 3px 0 0 var(--accent)}
@@ -161,6 +161,61 @@ table.ref td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 .spd .ph{aspect-ratio:16/9;background:var(--chip);border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;color:var(--muted)}
 .spd dl{display:grid;grid-template-columns:auto 1fr;gap:.35rem .9rem;margin:0}
 .spd dt{color:var(--muted);font-size:.88rem;font-weight:600}.spd dd{margin:0}
+
+:root{--nav:#18293A;--good:#0ca30c;--warn:#b07a00;--crit:#d03b3b;--track:#dfe5ea}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--nav:#0a1219;--good:#3fbf3f;--warn:#fab219;--crit:#ef6b6b;--track:#22313f}}
+:root[data-theme="dark"]{--nav:#0a1219;--good:#3fbf3f;--warn:#fab219;--crit:#ef6b6b;--track:#22313f}
+main{max-width:1280px}
+.stock-grid{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1.25rem;align-items:start}
+.stock-pan{position:sticky;top:1rem}
+.seg-mob{display:none}
+@media (max-width:980px){.stock-grid{grid-template-columns:1fr}.seg-mob{display:inline-flex}.vue-liste .stock-pan{display:none}.vue-visuel .stock-liste{display:none}.stock-pan{position:static}}
+.pan{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:1rem;display:flex;flex-direction:column;gap:1.25rem}
+.pan h3{font-size:1.05rem}
+p.sub{color:var(--muted);font-size:.88rem}
+.pan-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem}
+.pan-kpi div{display:flex;flex-direction:column}
+.pan-kpi strong{font-family:"Barlow Condensed",sans-serif;font-size:1.6rem;line-height:1.1;color:var(--ink)}
+.pan-kpi span{font-size:.8rem;color:var(--muted);display:flex;align-items:center;gap:.25rem}
+.st-ok{color:var(--good)}.st-warn{color:var(--warn)}.st-crit{color:var(--crit)}
+.pan-kpi .st-crit span svg{color:var(--crit)}.pan-kpi .st-warn span svg{color:var(--warn)}
+.pan-kpi .st-crit span,.pan-kpi .st-warn span{color:var(--muted)}
+.bobs{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:.6rem}
+.bob{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:.6rem .4rem;display:flex;flex-direction:column;align-items:center;gap:.2rem;text-align:center}
+.bob:hover{border-color:var(--ink)}
+.bob-r{width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--c) var(--p),var(--track) 0);display:grid;place-items:center;box-shadow:0 0 0 1px var(--line)}
+.bob-in{width:44px;height:44px;border-radius:50%;background:var(--panel);display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:1.2rem;line-height:1;box-shadow:0 0 0 1px var(--line)}
+.bob-in small{font-family:Barlow,sans-serif;font-weight:500;font-size:.62rem;color:var(--muted)}
+.bob-n{font-size:.82rem;font-weight:600;line-height:1.15}
+.bob-q{font-size:.75rem;color:var(--muted)}
+.bob-s{font-size:.72rem;display:flex;align-items:center;gap:.2rem}
+.jg{padding:.45rem 0;border-top:1px solid var(--line)}
+.jg:first-of-type{border-top:0}
+.jg-h{display:flex;justify-content:space-between;gap:.5rem;font-size:.88rem}
+.jg-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.jg-t{position:relative;height:8px;background:var(--track);border-radius:4px;margin:.3rem 0 .2rem}
+.jg-t i{position:absolute;left:0;top:0;bottom:0;border-radius:4px;min-width:3px}
+.jg-t i.s-ok{background:var(--good)}.jg-t i.s-warn{background:var(--warn)}.jg-t i.s-crit{background:var(--crit)}
+.jg-t b{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);transform:translateX(-1px);border-radius:1px}
+.jg-f{font-size:.75rem;display:flex;align-items:center;gap:.3rem}
+.jg-f .sub{margin-left:auto;font-size:.72rem}
+.vc{display:grid;grid-template-columns:6.5rem 1fr auto;gap:.5rem;align-items:center;font-size:.85rem;padding:.2rem 0}
+.vc-t{height:10px;background:var(--track);border-radius:4px;overflow:hidden}
+.vc-t i{display:block;height:100%;background:var(--ink);opacity:.75;border-radius:4px}
+.bandeau{display:flex;gap:.75rem;align-items:center;justify-content:space-between;flex-wrap:wrap;background:color-mix(in srgb,var(--warn) 14%,var(--panel));border:1px solid color-mix(in srgb,var(--warn) 45%,var(--line));border-radius:8px;padding:.7rem 1rem;margin-bottom:1.25rem}
+.bandeau svg{color:var(--warn);vertical-align:-1px}
+.bloc{border:1px solid var(--line);border-radius:8px;padding:.6rem .8rem}
+.bloc summary{cursor:pointer;font-weight:600}
+.bloc-in{border-top:1px solid var(--line);padding-top:.8rem}
+.mv,.essai{display:grid;grid-template-columns:4.6rem 1fr auto auto;gap:.6rem;align-items:center;padding:.45rem 0;border-top:1px solid var(--line);font-size:.9rem}
+.mv:first-child{border-top:0}
+.mv-d{color:var(--muted);font-size:.8rem;font-variant-numeric:tabular-nums}
+.mv-n{min-width:0}.mv-n small{display:block;color:var(--muted);font-size:.78rem}
+.mv-q{white-space:nowrap;font-weight:600}.mv-c{white-space:nowrap;color:var(--muted);font-size:.85rem;text-align:right}
+.bloc-in .mv{grid-template-columns:1fr auto}
+.essai{width:100%;background:none;border:0;border-top:1px solid var(--line);text-align:left;cursor:pointer;grid-template-columns:4.6rem 1fr auto;color:var(--ink)}
+.essai:hover{background:var(--chip)}
+.lien{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}.lien input{flex:1 1 8rem;min-width:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
@@ -185,8 +240,8 @@ table.ref td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 <script src="especes.js"></script>
 <script>
 /* ---------- Données ---------- */
-const COLS=["projets","articles","leurres","refs","fabrications","photos"];
-const S={projets:[],articles:[],leurres:[],refs:[],fabrications:[],photos:[]};
+const COLS=["projets","articles","leurres","refs","fabrications","photos","mouvements","essais","reglages"];
+const S=Object.fromEntries(COLS.map(c=>[c,[]]));
 let view="accueil", filtre="tous", store=null, refSel=null;
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -199,7 +254,8 @@ let F=null, unsubs=[];
 function cloudStore(uidv){
   const col=c=>F.collection(F.db,"users",uidv,c);
   return{
-    listen(c,cb,err){return F.onSnapshot(col(c),s=>cb(s.docs.map(d=>({...d.data(),id:d.id}))),err)},
+    listen(c,cb,err){const q=c==="mouvements"&&F.query?F.query(col(c),F.orderBy("date","desc"),F.limit(1500)):col(c);return F.onSnapshot(q,s=>cb(s.docs.map(d=>({...d.data(),id:d.id}))),err)},
+    async batch(ops){const b=F.writeBatch(F.db);const J=x=>JSON.parse(JSON.stringify(x));ops.forEach(o=>{const r=this.ref(o.c,o.id);if(o.op==="inc")b.update(r,{qte:F.increment(o.d)});else if(o.op==="set")b.set(r,J(o.data));else if(o.op==="upd")b.update(r,J(o.f));else if(o.op==="del")b.delete(r)});await b.commit()},
     ref:(c,id)=>F.doc(F.db,"users",uidv,c,id),
     async save(c,o){const {id,...b}=o;await F.setDoc(this.ref(c,id),JSON.parse(JSON.stringify(b)))},
     async update(c,id,f){await F.updateDoc(this.ref(c,id),JSON.parse(JSON.stringify(f)))},
@@ -248,6 +304,15 @@ function exporter(){
   const blob=new Blob([JSON.stringify({exporte:new Date().toISOString(),...S},null,2)],{type:"application/json"});
   const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="atelier-"+new Date().toISOString().slice(0,10)+".json";
   document.body.appendChild(a);a.click();a.remove();toast("Sauvegarde téléchargée");
+  majReglages({dernierExport:new Date().toISOString()});
+}
+const REG=()=>S.reglages.find(x=>x.id==="general")||{};
+async function majReglages(f){try{await store.save("reglages",{...REG(),...f,id:"general"})}catch(e){}}
+function bandeauExport(){
+  const d=REG().dernierExport,j=d?Math.floor((Date.now()-new Date(d))/864e5):null;
+  if(j!==null&&j<30)return"";
+  const vide=!S.articles.length&&!S.leurres.length&&!S.projets.length;if(vide)return"";
+  return`<div class="bandeau"><span>${ICO_NIV.warn} ${j===null?"Tu n'as encore jamais exporté tes données.":`Dernier export il y a ${j} jours.`} Une sauvegarde par mois te protège d'une suppression par erreur.</span><button class="btn sm" onclick="exporter()">Exporter maintenant</button></div>`;
 }
 
 /* ---------- Calculs ---------- */
@@ -271,7 +336,9 @@ const lotQ=a=>Number(a?.lotQte)>0?Number(a.lotQte):cfg(a).lot;
 const pu=a=>!a?0:(Number(a.prixLot)>0&&lotQ(a)>0?Number(a.prixLot)/lotQ(a):(Number(a.prix)||0));
 const nomArt=a=>a?(a.nom||[a.matiere,a.couleur].filter(Boolean).join(" ")||"Sans nom"):"Article supprimé";
 const enLots=a=>{const n=(Number(a.qte)||0)/lotQ(a),c=cfg(a);return fmt(n)+" "+(n>1?c.lotsNom:c.lotNom)};
-const coutLeurre=l=>(l.bom||[]).reduce((s,b)=>s+pu(art(b.articleId))*(Number(b.qte)||0),0);
+const coutMat=l=>(l.bom||[]).reduce((s,b)=>s+pu(art(b.articleId))*pnum(b.qte),0);
+const coutImp=l=>{const h=pnum(l.impH),r=REG();if(!(h>0))return 0;const kwh=r.kwh??0.25,w=r.watts??300,us=r.usure??0;return h*(w/1000)*kwh+h*us};
+const coutLeurre=l=>coutMat(l)+coutImp(l);
 const stockBas=()=>S.articles.filter(a=>Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil));
 const fabricables=l=>{const r=(l.bom||[]).filter(b=>Number(b.qte)>0).map(b=>Math.floor((Number(art(b.articleId)?.qte)||0)/Number(b.qte)));return r.length?Math.min(...r):0};
 const dot=a=>a?.teinte?`<span aria-hidden="true" style="display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:${esc(a.teinte)};border:1px solid var(--line);vertical-align:-1px;margin-right:.35rem"></span>`:"";
@@ -288,9 +355,9 @@ const head=(t,btn)=>`<div class="head"><div><h1>${t}</h1><div class="mob-sync" i
 function vAccueil(){
   const bas=stockBas(), actifs=S.projets.filter(p=>p.statut==="En cours");
   const valeur=S.articles.reduce((s,a)=>s+(Number(a.qte)||0)*pu(a),0);
-  const mois=new Date().toISOString().slice(0,7),fabMois=S.fabrications.filter(f=>(f.date||"").startsWith(mois)).reduce((s,f)=>s+(Number(f.n)||0),0);
+  const now=new Date(),fabMois=S.fabrications.filter(f=>{const d=new Date(f.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()}).reduce((s,f)=>s+(Number(f.n)||0),0);
   const taches=S.projets.flatMap(p=>(p.taches||[]).filter(t=>!t.fait).map(t=>({...t,p})));
-  return head("Accueil",`<div style="display:flex;gap:.5rem;flex-wrap:wrap">${OD.pca&&!OD.compte()?`<button class="btn ghost sm" onclick="OD.connecter()">Connecter OneDrive</button>`:""}<button class="btn ghost sm" onclick="exporter()">Exporter</button><button class="btn ghost sm" onclick="logout()">Déconnexion</button></div>`)+`
+  return head("Accueil",`<div style="display:flex;gap:.5rem;flex-wrap:wrap">${OD.pca&&!OD.compte()?`<button class="btn ghost sm" onclick="OD.connecter()">Connecter OneDrive</button>`:""}<button class="btn ghost sm" onclick="editReglages()">Réglages</button><button class="btn ghost sm" onclick="exporter()">Exporter</button><button class="btn ghost sm" onclick="logout()">Déconnexion</button></div>`)+bandeauExport()+`
   <div class="kpis">
     <div class="kpi"><strong>${actifs.length}</strong><span>projets en cours</span></div>
     <div class="kpi"><strong>${taches.length}</strong><span>tâches ouvertes</span></div>
@@ -307,7 +374,7 @@ function vAccueil(){
 }
 
 function vLogin(){return`<div style="max-width:380px;margin:12vh auto 0"><h1 style="font-size:3rem">Atelier</h1><p class="sub" style="margin:.25rem 0 1.5rem">Projets, stock et leurres.</p>
-  <div style="display:flex;flex-direction:column;gap:.75rem"><label>Email<input id="l_mail" type="email" autocomplete="username"></label>
+  <div style="display:flex;flex-direction:column;gap:.75rem"><label>Email<input id="l_mail" type="email" autocomplete="username" onkeydown="if(event.key==='Enter')login()"></label>
   <label>Mot de passe<input id="l_pw" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')login()"></label>
   <button class="btn" onclick="login()">Se connecter</button><p id="l_err" style="color:var(--alert);margin:0;min-height:1.4em"></p></div></div>`}
 function vConfig(){return`<div style="max-width:560px;margin:10vh auto 0"><h1>Configuration requise</h1><p>Remplis le fichier <b>config.js</b> avec les clés de ton projet Firebase, puis attends la republication (1 à 2 min) et recharge. Voir LISEZMOI.md.</p></div>`}
@@ -316,27 +383,96 @@ function vErreur(){return`<div style="max-width:560px;margin:10vh auto 0"><h1>Co
 const DOMAINES=["Leurres","Pêche","Moto","Maison","Bateau","Autre"];
 const STATUTS=["Idée","En cours","En pause","Terminé"];
 function vProjets(){
-  const l=S.projets.filter(p=>filtre==="tous"||p.domaine===filtre).sort((a,b)=>STATUTS.indexOf(a.statut)-STATUTS.indexOf(b.statut));
+  const l=S.projets.filter(p=>filtre==="tous"||p.domaine===filtre).sort((a,b)=>["En cours","Idée","En pause","Terminé"].indexOf(a.statut)-["En cours","Idée","En pause","Terminé"].indexOf(b.statut));
   return head("Projets",`<button class="btn" onclick="editProjet()">Nouveau projet</button>`)+filters(DOMAINES)+`<div class="list">${
-    l.length?l.map(p=>{const av=avancement(p);return`<div class="row click" onclick="editProjet('${p.id}')"><div class="grow"><h3>${esc(p.nom)}</h3><div class="sub">${esc(p.domaine)} · ${(p.taches||[]).length} tâches${nbMed(p)}${p.budget?" · budget "+eur(p.budget):""}</div><div class="bar"><i style="width:${av}%"></i></div></div><span class="pill ${p.statut==="En cours"?"acc":p.statut==="Terminé"?"ok":""}">${esc(p.statut)}</span></div>`}).join("")
+    l.length?l.map(p=>{const av=avancement(p);return`<div class="row click" onclick="editProjet('${p.id}')"><div class="grow"><h3>${esc(p.nom)}</h3><div class="sub">${esc(p.domaine)} · ${(p.taches||[]).length} tâche${(p.taches||[]).length>1?"s":""}${nbMed(p)}${(()=>{const d=depensesProjet(p).tot;return p.budget?" · "+eur(d)+" / "+eur(p.budget):d?" · "+eur(d)+" dépensés":""})()}${nbLiens(p)}</div><div class="bar"><i style="width:${av}%"></i></div></div><span class="pill ${p.statut==="En cours"?"acc":p.statut==="Terminé"?"ok":""}">${esc(p.statut)}</span></div>`}).join("")
     :`<div class="empty">Aucun projet ici. Crée-en un pour suivre tes tâches et ton budget.</div>`}</div>`;
 }
 
+let stockVue="liste",stockQ="",stockOnglet="articles",jrnMotif="tous";
+const niveau=a=>{const q=Number(a.qte)||0,sl=Number(a.seuil)||0;
+  if(q<=0)return{k:"crit",t:"Épuisé"};if(sl>0&&q<=sl)return{k:"crit",t:"À racheter"};if(sl>0&&q<=sl*1.5)return{k:"warn",t:"Bientôt bas"};return{k:"ok",t:"OK"}};
+const ICO_NIV={ok:'<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="currentColor" stroke-width="2"/></svg>',
+  warn:'<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M6 1 11 11H1Z" fill="currentColor"/></svg>',
+  crit:'<svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><rect x="1" y="1" width="10" height="10" rx="1" fill="currentColor"/></svg>'};
+function jauge(a){
+  const q=Number(a.qte)||0,sl=Number(a.seuil)||0,L=lotQ(a),max=Math.max(q,sl*2.5,L,1),n=niveau(a);
+  const pq=Math.min(100,q/max*100),ps=Math.min(100,sl/max*100);
+  return`<div class="jg" title="${esc(nomArt(a))} : ${fmt(q)} ${esc(a.unite)}${sl?", seuil "+fmt(sl)+" "+esc(a.unite):""}">
+    <div class="jg-h"><span class="jg-n">${dot(a)}${esc(nomArt(a))}</span><span class="num">${fmt(q)} ${esc(a.unite)}</span></div>
+    <div class="jg-t"><i class="s-${n.k}" style="width:${pq}%"></i>${sl?`<b style="left:${ps}%" aria-hidden="true"></b>`:""}</div>
+    <div class="jg-f st-${n.k}">${ICO_NIV[n.k]} ${n.t}${sl?`<span class="sub">seuil ${fmt(sl)} ${esc(a.unite)}</span>`:""}</div></div>`;
+}
+function bobine(a){
+  const q=Number(a.qte)||0,L=lotQ(a),pleines=Math.floor(q/L),reste=(q%L)/L,n=niveau(a),col=a.teinte||"#9aa5b1";
+  const pct=pleines>0&&reste===0?100:Math.round(reste*100);
+  return`<button type="button" class="bob" onclick="editArticle('${a.id}')" title="${esc(nomArt(a))} : ${fmt(q)} g">
+    <span class="bob-r" style="--c:${esc(col)};--p:${pct}%"><span class="bob-in">${fmt(q/L,q/L<10?2:1)}<small>${q/L>1?"bobines":"bobine"}</small></span></span>
+    <span class="bob-n">${esc(nomArt(a))}</span><span class="bob-q num">${fmt(q)} g</span><span class="st-${n.k} bob-s">${ICO_NIV[n.k]} ${n.t}</span></button>`;
+}
+function panneauStock(l){
+  const fil=l.filter(a=>a.categorie==="Filament"),autres=l.filter(a=>a.categorie!=="Filament");
+  const parCat=CATS.map(c=>({c,v:S.articles.filter(a=>a.categorie===c).reduce((s,a)=>s+(Number(a.qte)||0)*pu(a),0)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+  const vmax=Math.max(...parCat.map(x=>x.v),1),tot=parCat.reduce((s,x)=>s+x.v,0);
+  const crit=S.articles.filter(a=>niveau(a).k==="crit").length,warn=S.articles.filter(a=>niveau(a).k==="warn").length;
+  return`<div class="pan">
+  <div class="pan-kpi"><div><strong class="num">${eur(tot)}</strong><span>valeur du stock</span></div><div class="st-crit"><strong>${crit}</strong><span>${ICO_NIV.crit} à racheter</span></div><div class="st-warn"><strong>${warn}</strong><span>${ICO_NIV.warn} bientôt bas</span></div></div>
+  ${fil.length?`<section><h3>Bobines de filament</h3><p class="sub" style="margin:.1rem 0 .6rem">Au centre : le nombre de bobines. L'anneau, à la couleur du filament : ce qui reste de la bobine entamée.</p><div class="bobs">${fil.map(bobine).join("")}</div></section>`:""}
+  ${autres.length?`<section><h3>Niveaux</h3><p class="sub" style="margin:.1rem 0 .6rem">Le trait vertical marque le seuil d'alerte.</p>${autres.map(jauge).join("")}</section>`:""}
+  ${parCat.length>1?`<section><h3>Valeur par catégorie</h3>${parCat.map(x=>`<div class="vc" title="${esc(x.c)} : ${eur(x.v)}"><span>${esc(x.c)}</span><div class="vc-t"><i style="width:${Math.max(2,x.v/vmax*100)}%"></i></div><span class="num">${eur(x.v)}</span></div>`).join("")}</section>`:""}
+  </div>`;
+}
 function vStock(){
-  const l=S.articles.filter(a=>filtre==="tous"||a.categorie===filtre).sort((a,b)=>(CATS.indexOf(a.categorie)-CATS.indexOf(b.categorie))||nomArt(a).localeCompare(nomArt(b)));
+  if(stockOnglet==="journal")return vJournal();if(stockOnglet==="courses")return vCourses();
+  const q=stockQ.trim().toLowerCase();
+  const l=S.articles.filter(a=>(filtre==="tous"||a.categorie===filtre)&&(!q||(nomArt(a)+" "+(a.fournisseur||"")+" "+a.categorie).toLowerCase().includes(q))).sort((a,b)=>(CATS.indexOf(a.categorie)-CATS.indexOf(b.categorie))||nomArt(a).localeCompare(nomArt(b)));
   const lk=stockVerrou;
-  return head("Stock",`<div style="display:flex;gap:.5rem;align-items:center"><button class="btn ghost lock ${lk?"":"open"}" onclick="basculerVerrou()" aria-pressed="${!lk}" title="${lk?"Déverrouiller les boutons + et −":"Verrouiller les boutons + et −"}">${lk?ICO_LOCK:ICO_OPEN}<span>${lk?"Verrouillé":"Déverrouillé"}</span></button><button class="btn" onclick="editArticle()">Nouvel article</button></div>`)+filters(CATS)+`<div class="list ${lk?"locked":""}">${
-    l.length?l.map(a=>{const bas=Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil),c=cfg(a),L=lotQ(a);
+  const liste=`<div class="list ${lk?"locked":""}">${
+    l.length?l.map(a=>{const n=niveau(a),c=cfg(a),L=lotQ(a);
       return`<div class="row"><div class="grow" style="cursor:pointer" onclick="editArticle('${a.id}')">${dot(a)}${esc(nomArt(a))}
       <div class="sub">${esc(a.categorie)}, 1 ${c.lotNom} = ${fmt(L)} ${esc(a.unite)}${Number(a.prixLot)>0?", "+eur(a.prixLot)+(c.fem?" la ":" le ")+c.lotNom:""}</div></div>
       <div class="qty"><button aria-label="Retirer 1 ${c.lotNom}" ${lk?"disabled":""} onclick="bouger('${a.id}',-1)">−</button>
-      <div style="text-align:center;min-width:5.5rem"><span class="num pill ${bas?"alert":""}">${fmt(a.qte)} ${esc(a.unite)}</span><div class="sub" style="font-size:.75rem">${enLots(a)}</div></div>
+      <div style="text-align:center;min-width:5.5rem"><span class="num pill ${n.k==="crit"?"alert":""}">${fmt(a.qte)} ${esc(a.unite)}</span><div class="sub" style="font-size:.75rem">${enLots(a)}</div></div>
       <button aria-label="Ajouter 1 ${c.lotNom}" ${lk?"disabled":""} onclick="bouger('${a.id}',1)">+</button></div></div>`}).join("")
-    :`<div class="empty">Aucun article. Ajoute tes bobines, résines et hameçons avec un seuil d'alerte.</div>`}</div>
+    :`<div class="empty">${S.articles.length?"Aucun article ne correspond.":"Aucun article. Ajoute tes bobines, résines et hameçons avec un seuil d'alerte."}</div>`}</div>
   ${l.length?`<p class="sub">${lk?"Les boutons + et − sont verrouillés : touche le cadenas pour les activer. ":""}+ et − ajoutent ou retirent un conditionnement entier (une bobine, un sachet…). Pour une quantité précise, ouvre l'article.</p>`:""}`;
+  return head("Stock",`<div style="display:flex;gap:.5rem;align-items:center"><button class="btn ghost lock ${lk?"":"open"}" onclick="basculerVerrou()" aria-pressed="${!lk}" title="${lk?"Déverrouiller les boutons + et −":"Verrouiller les boutons + et −"}">${lk?ICO_LOCK:ICO_OPEN}<span>${lk?"Verrouillé":"Déverrouillé"}</span></button><button class="btn" onclick="editArticle()">Nouvel article</button></div>`)
+  +ongletsStock()+`<div class="seg seg-mob" role="group" aria-label="Affichage"><button aria-pressed="${stockVue==="liste"}" onclick="stockVue='liste';render()">Liste</button><button aria-pressed="${stockVue==="visuel"}" onclick="stockVue='visuel';render()">Vue d'ensemble</button></div>`
+  +`<input class="search" type="search" placeholder="Rechercher un article" value="${esc(stockQ)}" oninput="stockQ=this.value;clearTimeout(window._sq);window._sq=setTimeout(()=>{render();const i=$('.search');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)" aria-label="Rechercher un article">`
+  +filters(CATS)+`<div class="stock-grid vue-${stockVue}"><div class="stock-liste">${liste}</div><aside class="stock-pan" aria-label="Vue d'ensemble du stock">${panneauStock(l)}</aside></div>`;
 }
 const ICO_LOCK='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICO_OPEN='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
+function ongletsStock(){const nb=S.articles.filter(a=>niveau(a).k!=="ok").length;
+  return`<div class="seg" role="group" aria-label="Section du stock" style="margin-right:.5rem">${[["articles","Articles"],["journal","Journal"],["courses","Courses"+(nb?` (${nb})`:"")]].map(([k,l])=>`<button aria-pressed="${stockOnglet===k}" onclick="stockOnglet='${k}';render()">${l}</button>`).join("")}</div>`}
+function vJournal(){
+  const L=S.mouvements.filter(m=>jrnMotif==="tous"||m.motif===jrnMotif).sort((a,b)=>b.date.localeCompare(a.date));
+  const mois=new Date();const ceMois=S.mouvements.filter(m=>{const d=new Date(m.date);return m.motif==="achat"&&d.getMonth()===mois.getMonth()&&d.getFullYear()===mois.getFullYear()}).reduce((s,m)=>s+(Number(m.cout)||0),0);
+  return head("Stock")+ongletsStock()+`<div class="filters" style="margin-top:.75rem">${["tous",...Object.keys(MOTIFS)].map(k=>`<button aria-pressed="${jrnMotif===k}" onclick="jrnMotif='${k}';render()">${k==="tous"?"Tous":MOTIFS[k]}</button>`).join("")}</div>
+  <p class="sub">Achats ce mois-ci : <b class="num">${eur(ceMois)}</b>. Le journal garde les 1 500 derniers mouvements.</p>
+  <div class="list" style="padding:.25rem .75rem">${L.length?L.slice(0,300).map(ligneMvt).join(""):`<div class="empty">Aucun mouvement. Chaque +, −, achat, fabrication ou correction de quantité s'enregistre ici.</div>`}</div>`;
+}
+const suggestion=a=>{const L=lotQ(a),sl=Number(a.seuil)||0,q=Number(a.qte)||0;return Math.max(1,Math.ceil((Math.max(sl*2,sl+L)-q)/L))};
+function vCourses(){
+  const L=S.articles.filter(a=>niveau(a).k!=="ok").sort((a,b)=>(niveau(a).k==="crit"?0:1)-(niveau(b).k==="crit"?0:1));
+  const four=[...new Set(L.map(a=>a.fournisseur||"Sans fournisseur"))].sort();
+  const tot=L.reduce((s,a)=>s+suggestion(a)*(Number(a.prixLot)||0),0);
+  return head("Stock",L.length?`<button class="btn ghost" onclick="copierCourses()">Copier la liste</button>`:"")+ongletsStock()+
+  (L.length?`<p class="sub" style="margin-top:.75rem">Quantité conseillée : de quoi remonter à deux fois le seuil. Total estimé <b class="num">${eur(tot)}</b>.</p>`+four.map(f=>`<section class="block"><h2 class="grp">${esc(f)}</h2><div class="list">${L.filter(a=>(a.fournisseur||"Sans fournisseur")===f).map(a=>{const n=niveau(a),k=suggestion(a),c=cfg(a);
+    return`<div class="row"><div class="grow">${dot(a)}${esc(nomArt(a))}<div class="sub"><span class="st-${n.k}">${ICO_NIV[n.k]} ${n.t}</span>, reste ${fmt(a.qte)} ${esc(a.unite)} (seuil ${fmt(a.seuil)})</div></div>
+    <div style="text-align:right"><div class="num">${k} ${k>1?c.lotsNom:c.lotNom}</div><div class="sub">${Number(a.prixLot)>0?eur(k*a.prixLot):"prix inconnu"}</div></div>
+    <button class="btn ghost sm" onclick="acheteCourse('${a.id}',${k})">Acheté</button></div>`}).join("")}</div></section>`).join("")
+  :`<div class="list" style="margin-top:.75rem"><div class="empty">Rien à acheter : tout le stock est au-dessus des seuils.</div></div>`);
+}
+function acheteCourse(id,k){const a=art(id);if(!a)return;const d=k*lotQ(a);
+  const m=mvt(a,d,"achat",{cout:Number(a.prixLot)>0?k*a.prixLot:null});
+  lancer([{op:"inc",c:"articles",id,d},m],"Acheté : + "+fmt(d)+" "+a.unite+" "+nomArt(a),[{op:"inc",c:"articles",id,d:-d},{op:"del",c:"mouvements",id:m.id}]);
+}
+function copierCourses(){
+  const L=S.articles.filter(a=>niveau(a).k!=="ok");const four=[...new Set(L.map(a=>a.fournisseur||"Sans fournisseur"))].sort();
+  const txt="Courses Atelier\n"+four.map(f=>"\n"+f+"\n"+L.filter(a=>(a.fournisseur||"Sans fournisseur")===f).map(a=>{const k=suggestion(a),c=cfg(a);return`- ${nomArt(a)} : ${k} ${k>1?c.lotsNom:c.lotNom}`}).join("\n")).join("\n");
+  (navigator.clipboard?.writeText(txt)||Promise.reject()).then(()=>toast("Liste copiée, colle-la dans tes notes ou un message")).catch(()=>{body.innerHTML=`<h2>Liste de courses</h2><textarea style="min-height:16rem">${esc(txt)}</textarea><div class="actions"><button class="btn" onclick="dlg.close()">Fermer</button></div>`;dlg.showModal()});
+}
 let stockVerrou=true,verrouTimer=null;
 function basculerVerrou(){stockVerrou=!stockVerrou;clearTimeout(verrouTimer);
   if(!stockVerrou)verrouTimer=setTimeout(()=>{stockVerrou=true;if(view==="stock")render();toast("Stock reverrouillé")},120000);
@@ -350,47 +486,57 @@ function vLeurres(){
     const tot=h.reduce((s,f)=>s+(Number(f.n)||0),0);
     return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+seg+`<div class="list">${
       h.length?h.slice(0,200).map(f=>`<div class="row"><div class="grow"><h3>${esc(f.nom)} <span class="pill">${esc(f.version||"")}</span> × ${f.n}</h3>
-        <div class="sub">${new Date(f.date).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"})}, ${(f.conso||[]).map(c=>fmt(c.qte)+" "+esc(c.unite)+" "+esc(c.nom)).join(", ")}</div></div>
+        <div class="sub">${new Date(f.date).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"})}${f.projetId&&S.projets.find(p=>p.id===f.projetId)?", projet "+esc(S.projets.find(p=>p.id===f.projetId).nom):""}, ${(f.conso||[]).map(c=>fmt(c.qte)+" "+esc(c.unite)+" "+esc(c.nom)).join(", ")}</div></div>
         <div style="text-align:right"><div class="num">${eur(f.cout)}</div><button class="btn ghost sm" style="margin-top:.3rem" onclick="annulerFab('${f.id}')">Annuler</button></div></div>`).join("")
       :`<div class="empty">Aucune fabrication. Ouvre une fiche leurre et clique sur Fabriquer : le stock est déduit et la fabrication apparaît ici.</div>`}</div>
       ${h.length?`<p class="sub">${tot} leurre${tot>1?"s":""} fabriqué${tot>1?"s":""} au total. « Annuler » remet les composants en stock et supprime la ligne.</p>`:""}`;
   }
   const l=[...S.leurres].sort((a,b)=>(a.nom+a.version).localeCompare(b.nom+b.version));
   return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+seg+`<div class="list">${
-    l.length?l.map(x=>{const f=fabricables(x),nf=S.fabrications.filter(z=>z.leurreId===x.id).reduce((s,z)=>s+(Number(z.n)||0),0);return`<div class="row click" onclick="editLeurre('${x.id}')"><div class="grow"><h3>${esc(x.nom)} <span class="pill">${esc(x.version||"V1")}</span></h3><div class="sub">${[x.corps,x.longueur&&x.longueur+" mm",x.poids&&x.poids+" g",x.nage].filter(Boolean).map(esc).join(" · ")||"Caractéristiques à compléter"}${nf?" · fabriqué "+nf+" fois":""}${nbMed(x)}</div></div><div style="text-align:right"><div class="num">${eur(coutLeurre(x))}</div><div class="sub">${f} fabricable${f>1?"s":""}</div></div></div>`}).join("")
+    l.length?l.map(x=>{const f=fabricables(x),nf=S.fabrications.filter(z=>z.leurreId===x.id).reduce((s,z)=>s+(Number(z.n)||0),0);return`<div class="row click" onclick="editLeurre('${x.id}')"><div class="grow"><h3>${esc(x.nom)} <span class="pill">${esc(x.version||"V1")}</span></h3><div class="sub">${[x.corps,x.longueur&&x.longueur+" mm",x.poids&&x.poids+" g",x.nage].filter(Boolean).map(esc).join(" · ")||"Caractéristiques à compléter"}${nf?" · fabriqué "+nf+" fois":""}${prisesDe(x.id)?" · "+prisesDe(x.id)+" prise"+(prisesDe(x.id)>1?"s":""):""}${nbLiens(x)}${nbMed(x)}</div></div><div style="text-align:right"><div class="num">${eur(coutLeurre(x))}</div><div class="sub">${f} fabricable${f>1?"s":""}</div></div></div>`}).join("")
     :`<div class="empty">Aucune fiche. Crée un modèle, liste ses composants, et le coût de revient se calcule depuis ton stock.</div>`}</div>`;
 }
 async function annulerFab(id){
   const f=S.fabrications.find(x=>x.id===id);if(!f)return;
   if(!confirm(`Annuler la fabrication de ${f.n} × ${f.nom} ? Les composants seront remis en stock.`))return;
-  const deltas=(f.conso||[]).filter(c=>art(c.articleId)).map(c=>[c.articleId,Number(c.qte)||0]);
-  try{await store.annulerFab(deltas,id);toast("Fabrication annulée, stock remis")}catch(e){toast("Échec ("+(e.code||"erreur")+")")}
+  const ops=(f.conso||[]).filter(c=>art(c.articleId)).map(c=>({op:"inc",c:"articles",id:c.articleId,d:Number(c.qte)||0}));
+  (f.mvtIds||[]).forEach(m=>ops.push({op:"del",c:"mouvements",id:m}));ops.push({op:"del",c:"fabrications",id});
+  try{await store.batch(ops);toast("Fabrication annulée, stock remis")}catch(e){toast("Échec ("+(e.code||"erreur")+")")}
 }
 function filters(opts){return`<div class="filters">${["tous",...opts].map(o=>`<button aria-pressed="${filtre===o}" onclick="filtre='${o}';render()">${o==="tous"?"Tous":o}</button>`).join("")}</div>`}
 
 /* ---------- Actions ---------- */
-document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";refSel=null;stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
+document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";refSel=null;stockQ="";stockOnglet="articles";stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
 function toast(t,action){const e=$("#toast");e.textContent=t;e.classList.toggle("act",!!action);
   if(action){const b=document.createElement("button");b.textContent=action.label;b.onclick=()=>{e.classList.remove("show","act");clearTimeout(e._t);action.fn()};e.appendChild(b)}
   e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show","act"),action?6000:2200)}
 const dernierAppui={};
+const MOTIFS={achat:"Achat",sortie:"Sortie",fabrication:"Fabrication",annulation:"Annulation",correction:"Correction",initial:"Stock initial",perte:"Perte / casse"};
+function mvt(a,delta,motif,x={}){return{op:"set",c:"mouvements",id:uid(),data:{date:new Date().toISOString(),articleId:a.id,nom:nomArt(a),categorie:a.categorie||"",delta:Math.round(delta*1000)/1000,unite:a.unite||"",motif,cout:x.cout??null,projetId:x.projetId||"",ref:x.ref||""}}}
+async function lancer(ops,ok,undoOps){try{await store.batch(ops);toast(ok,undoOps?{label:"Annuler",fn:()=>store.batch(undoOps).then(()=>toast("Annulé")).catch(e=>toast("Échec : "+(e.code||"erreur")))}:undefined)}catch(e){toast("Échec : "+(e.code||"erreur"))}}
 function bouger(id,sens){if(stockVerrou){toast("Déverrouille d'abord avec le cadenas");return}const a=art(id);if(!a)return;
   const t=Date.now();if(t-(dernierAppui[id]||0)<800)return;dernierAppui[id]=t;
-  const L=lotQ(a),q=Number(a.qte)||0,c=cfg(a);
+  const L=lotQ(a),q=Number(a.qte)||0;
   let d=sens*L;if(sens<0){if(q<=0){toast("Stock déjà à zéro");return}if(q<L)d=-q}
-  store.inc("articles",id,d).then(()=>toast((d>0?"+ ":"− ")+fmt(Math.abs(d))+" "+a.unite+" "+nomArt(a),{label:"Annuler",fn:()=>store.inc("articles",id,-d).then(()=>toast("Annulé")).catch(e=>toast("Échec : "+(e.code||"erreur")))}))
-    .catch(e=>toast("Échec : "+(e.code||"erreur")))}
+  const m=mvt(a,d,d>0?"achat":"sortie",{cout:d>0&&Number(a.prixLot)>0?Number(a.prixLot):null});
+  lancer([{op:"inc",c:"articles",id,d},m],(d>0?"+ ":"− ")+fmt(Math.abs(d))+" "+a.unite+" "+nomArt(a),[{op:"inc",c:"articles",id,d:-d},{op:"del",c:"mouvements",id:m.id}]);
+}
 function cocher(pid,tid){const p=S.projets.find(x=>x.id===pid);if(!p)return;
   upd("projets",pid,{taches:p.taches.map(t=>t.id===tid?{...t,fait:true}:t)});toast("Tâche terminée")}
 
 const dlg=$("#dlg"),body=$("#dlgBody");
 const opt=(arr,v)=>arr.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("");
 const val=id=>document.getElementById(id).value.trim();
-const num=id=>Number(document.getElementById(id).value)||0;
+const pnum=v=>{const n=parseFloat(String(v??"").replace(/\s/g,"").replace(",","."));return isFinite(n)?n:0};
+const num=id=>pnum(document.getElementById(id).value);
+const vIn=v=>v===undefined||v===null||v===""?"":String(v).replace(".",",");
 function actions(c,id,onSave){return`<div class="actions">${id?`<button class="btn danger" id="del">Supprimer</button>`:""}<span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" id="ok">Enregistrer</button></div>`}
 function wire(c,id,build){
   const orig0=id?JSON.parse(JSON.stringify(S[c].find(x=>x.id===id)||{})):null;
   $("#ok").onclick=async()=>{const o=build();if(!o)return;dlg.close();
+    if(c==="articles"){const avant=id?Number(orig0.qte)||0:0,apres=Number(o.qte)||0;
+      if(apres!==avant){const m=mvt({...o},apres-avant,id?"correction":"initial");
+        try{await store.batch([{op:"set",c,id:o.id,data:id?{...orig0,...o,id:undefined}:{...o,medias:[],id:undefined}},m]);toast("Enregistré");}catch(e){toast("Échec de l'enregistrement : "+(e.code||"erreur"))}return}}
     if(!id){await save(c,{...o,medias:[]});toast("Enregistré");return}
     const diff={};Object.keys(o).forEach(k=>{if(k!=="id"&&JSON.stringify(o[k])!==JSON.stringify(orig0[k]))diff[k]=o[k]});
     if(Object.keys(diff).length){await upd(c,id,diff);toast("Enregistré")}else toast("Aucune modification")};
@@ -405,11 +551,11 @@ function editArticle(id){
   body.innerHTML=`<h2>${id?"Modifier l'article":"Nouvel article"}</h2>
   <label>Catégorie<select id="f_cat" onchange="formArticle()">${opt(CATS,a.categorie)}</select></label>
   <div id="artForm"></div>`+actions("articles",id);
-  window._art=a;formArticle(true);
+  window._art={...a};formArticle(true);
   wire("articles",id,()=>{
     const cat=val("f_cat"),fil=cat==="Filament";
-    const nom=val("f_nom")||(fil?[val("f_mat"),val("f_coul")].filter(Boolean).join(" "):"");
-    if(!nom){toast("Donne un nom à l'article");return}
+    const nom=val("f_nom");
+    if(!nom&&!fil){toast("Donne un nom à l'article");return}
     if(!(num("f_lot")>0)){toast("Indique la quantité d'un conditionnement");return}
     return{id:a.id||uid(),nom,categorie:cat,matiere:fil?val("f_mat"):"",couleur:fil?val("f_coul"):"",teinte:fil&&$("#f_teinte").dataset.set==="1"?$("#f_teinte").value:"",
       unite:val("f_unite"),lotQte:num("f_lot"),prixLot:num("f_plot"),prix:0,qte:num("f_qte"),seuil:num("f_seuil"),fournisseur:val("f_four"),notes:val("f_notes")}});
@@ -418,8 +564,10 @@ function editArticle(id){
 function formArticle(init){
   const prev=init?window._art:{...window._art,nom:$("#f_nom")?.value,matiere:$("#f_mat")?.value,couleur:$("#f_coul")?.value,qte:$("#f_qte")?.value,seuil:$("#f_seuil")?.value,prixLot:$("#f_plot")?.value,fournisseur:$("#f_four")?.value,notes:$("#f_notes")?.value,teinte:$("#f_teinte")?.dataset.set==="1"?$("#f_teinte").value:window._art.teinte};
   const cat=$("#f_cat").value,c=CATCFG[cat],fil=cat==="Filament";
+  if(init&&fil&&prev.nom&&prev.nom===[prev.matiere,prev.couleur].filter(Boolean).join(" "))prev.nom="";
   const memeCat=init||prev.categorie===cat;
-  const unite=memeCat&&c.unites.includes(prev.unite)?prev.unite:c.unites[0];
+  const unites=memeCat&&prev.unite&&!c.unites.includes(prev.unite)?[...c.unites,prev.unite]:c.unites;
+  const unite=memeCat&&unites.includes(prev.unite)?prev.unite:c.unites[0];
   const lot=memeCat&&Number(prev.lotQte)>0?prev.lotQte:c.lot;
   window._art={...prev,categorie:cat};
   $("#artForm").innerHTML=`
@@ -427,19 +575,38 @@ function formArticle(init){
   <label>Couleur<span style="display:flex;gap:.4rem"><input id="f_coul" value="${esc(prev.couleur)}" placeholder="Noir" style="flex:1"><input id="f_teinte" type="color" value="${esc(prev.teinte||"#888888")}" data-set="${prev.teinte?1:0}" oninput="this.dataset.set=1" style="width:3rem;padding:.15rem" aria-label="Teinte"></span></label></div>`:""}
   <label>Nom${fil?" (facultatif)":""}<input id="f_nom" value="${esc(prev.nom)}" placeholder="${fil?"Auto : matière + couleur":"Ex. Anneau brisé 150 lb"}"></label>
   <div class="grid2">
-  <label>Unité de stock<select id="f_unite" onchange="majArtCalc()">${opt(c.unites,unite)}</select></label>
-  <label><span>1 ${c.lotNom} = (<span class="u">${esc(unite)}</span>)</span><input id="f_lot" type="number" step="any" min="0" value="${lot}" oninput="majArtCalc()"></label>
-  <label>Prix d'un${c.fem?"e":""} ${c.lotNom} (€)<input id="f_plot" type="number" step="any" min="0" value="${prev.prixLot??""}" oninput="majArtCalc()"></label>
+  <label>Unité de stock<select id="f_unite" onchange="majArtCalc()">${opt(unites,unite)}</select></label>
+  <label><span>1 ${c.lotNom} = (<span class="u">${esc(unite)}</span>)</span><input id="f_lot" type="text" inputmode="decimal" autocomplete="off" value="${vIn(lot)}" oninput="majArtCalc()"></label>
+  <label>Prix d'un${c.fem?"e":""} ${c.lotNom} (€)<input id="f_plot" type="text" inputmode="decimal" autocomplete="off" value="${vIn(prev.prixLot??"")}" oninput="majArtCalc()"></label>
   <label>Prix unitaire (calculé)<input id="f_pu" disabled></label>
-  <label><span>En stock (<span class="u">${esc(unite)}</span>)</span><input id="f_qte" type="number" step="any" min="0" value="${prev.qte??0}" oninput="majArtCalc()"></label>
-  <label><span>Seuil d'alerte (<span class="u">${esc(unite)}</span>)</span><input id="f_seuil" type="number" step="any" min="0" value="${prev.seuil??0}"></label>
+  <label><span>En stock (<span class="u">${esc(unite)}</span>)</span><input id="f_qte" type="text" inputmode="decimal" autocomplete="off" value="${vIn(prev.qte??0)}" oninput="majArtCalc()"></label>
+  <label><span>Seuil d'alerte (<span class="u">${esc(unite)}</span>)</span><input id="f_seuil" type="text" inputmode="decimal" autocomplete="off" value="${vIn(prev.seuil??0)}"></label>
   </div>
   <p class="sub" id="f_eq" style="margin:0"></p>
   ${Number(prev.prix)>0&&!(Number(prev.prixLot)>0)?`<p class="sub" style="margin:0;color:var(--alert)">Ancien prix unitaire enregistré : ${eur(prev.prix)}/${esc(prev.unite)}. Renseigne le prix d'achat pour le remplacer.</p>`:""}
   <label>Fournisseur<input id="f_four" value="${esc(prev.fournisseur)}"></label>
-  <label>Notes<textarea id="f_notes">${esc(prev.notes)}</textarea></label>`;
+  <label>Notes<textarea id="f_notes">${esc(prev.notes)}</textarea></label>
+  ${prev.id&&init?blocAchat(prev)+blocMvts(prev.id):""}`;
   majArtCalc();
 }
+const optProjets=(sel)=>`<option value="">Aucun projet</option>`+S.projets.filter(p=>p.statut!=="Terminé"||p.id===sel).map(p=>`<option value="${p.id}" ${p.id===sel?"selected":""}>${esc(p.nom)}</option>`).join("");
+function blocAchat(a){const c=cfg(a);return`<details class="bloc"><summary>Enregistrer un achat</summary>
+  <div class="grid2" style="margin-top:.6rem"><label>Nombre de ${c.lotsNom}<input id="ac_n" type="text" inputmode="decimal" value="1" oninput="$('#ac_p').placeholder=vIn((pnum(this.value)*(Number(art('${a.id}')?.prixLot)||0)).toFixed(2))"></label>
+  <label>Prix payé total (€)<input id="ac_p" type="text" inputmode="decimal" placeholder="${vIn((Number(a.prixLot)||0).toFixed(2))}"></label>
+  <label style="grid-column:1/-1">Pour le projet<select id="ac_proj">${optProjets()}</select></label></div>
+  <p class="sub" style="margin:.4rem 0">Ajoute la quantité au stock et la note dans le journal. Si le prix payé diffère, le prix du ${c.lotNom} est mis à jour.</p>
+  <button type="button" class="btn ghost sm" onclick="enregistrerAchat('${a.id}')">Enregistrer l'achat</button></details>`}
+async function enregistrerAchat(id){const a=art(id);if(!a)return;
+  const n=num("ac_n");if(!(n>0)){toast("Indique une quantité");return}
+  const L=lotQ(a),d=n*L,prixTot=$("#ac_p").value.trim()?num("ac_p"):n*(Number(a.prixLot)||0);
+  const ops=[{op:"inc",c:"articles",id,d},mvt(a,d,"achat",{cout:prixTot||null,projetId:val("ac_proj")})];
+  const pl=prixTot>0?Math.round(prixTot/n*100)/100:0;if(pl>0&&pl!==Number(a.prixLot))ops.push({op:"upd",c:"articles",id,f:{prixLot:pl}});
+  dlg.close();await lancer(ops,"Achat enregistré : + "+fmt(d)+" "+a.unite+" "+nomArt(a));
+}
+function blocMvts(id){const m=S.mouvements.filter(x=>x.articleId===id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
+  return`<details class="bloc"><summary>Derniers mouvements${m.length?` (${m.length}${m.length===8?"+":""})`:""}</summary>${m.length?`<div style="margin-top:.5rem">${m.map(ligneMvt).join("")}</div>`:`<p class="sub">Aucun mouvement enregistré pour cet article.</p>`}</details>`}
+function ligneMvt(x){const pr=x.projetId?S.projets.find(p=>p.id===x.projetId):null;
+  return`<div class="mv"><span class="mv-d">${new Date(x.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"})}</span><span class="mv-n">${esc(x.nom)}<small>${esc(MOTIFS[x.motif]||x.motif)}${pr?", "+esc(pr.nom):""}</small></span><span class="mv-q num ${x.delta>0?"st-ok":"st-crit"}">${x.delta>0?"+":"−"}${fmt(Math.abs(x.delta))} ${esc(x.unite)}</span><span class="mv-c num">${x.cout?eur(x.cout):""}</span></div>`}
 function majArtCalc(){
   const c=CATCFG[$("#f_cat").value],u=$("#f_unite").value,L=num("f_lot"),P=num("f_plot"),Q=num("f_qte");
   document.querySelectorAll("#artForm .u").forEach(e=>e.textContent=u);
@@ -447,25 +614,49 @@ function majArtCalc(){
   $("#f_eq").textContent=L>0?`Soit ${fmt(Q/L)} ${Q/L>1?c.lotsNom:c.lotNom} en stock${P>0?", valeur "+eur(Q*P/L):""}.`:"";
 }
 
+let tmpLiens=[];
+const blocLiens=()=>`<div class="bloc-in"><h3 style="margin-bottom:.2rem">Liens</h3><p class="sub" style="margin:0 0 .4rem">Dossier OneDrive de photos, vidéo, fichier STL, fiche fournisseur…</p><div id="liens" style="display:flex;flex-direction:column;gap:.4rem"></div>
+  <button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="tmpLiens.push({nom:'',url:''});drawLiens(true)">Ajouter un lien</button></div>`;
+function drawLiens(focus){const z=$("#liens");if(!z)return;
+  z.innerHTML=tmpLiens.map((x,i)=>`<div class="lien"><input value="${esc(x.nom)}" placeholder="Nom (ex. Photos essais)" oninput="tmpLiens[${i}].nom=this.value" aria-label="Nom du lien"><input value="${esc(x.url)}" placeholder="https://…" inputmode="url" oninput="tmpLiens[${i}].url=this.value" aria-label="Adresse du lien">${/^https?:\/\//.test(x.url)?`<a class="btn ghost sm" href="${esc(x.url)}" target="_blank" rel="noopener">Ouvrir</a>`:""}<button type="button" class="x" aria-label="Retirer le lien" onclick="tmpLiens.splice(${i},1);drawLiens()">×</button></div>`).join("");
+  if(focus){const l=z.querySelectorAll(".lien input");l[l.length-2]?.focus()}}
+const liensSaisis=()=>tmpLiens.map(x=>({nom:(x.nom||"").trim(),url:(x.url||"").trim()})).filter(x=>x.url).map(x=>({nom:x.nom||x.url.replace(/^https?:\/\/(www\.)?/,"").split("/")[0],url:/^https?:\/\//.test(x.url)?x.url:"https://"+x.url}));
+const nbLiens=o=>{const n=(o.liens||[]).length;return n?" · "+n+" lien"+(n>1?"s":""):""};
 let tmpTaches=[];
 function editProjet(id){
   const p=S.projets.find(x=>x.id===id)||{statut:"Idée",domaine:"Leurres",taches:[]};
-  tmpTaches=JSON.parse(JSON.stringify(p.taches||[]));
+  tmpTaches=JSON.parse(JSON.stringify(p.taches||[]));tmpLiens=JSON.parse(JSON.stringify(p.liens||[]));tmpDep=JSON.parse(JSON.stringify(p.depenses||[]));
   body.innerHTML=`<h2>${id?"Modifier le projet":"Nouveau projet"}</h2>
   <label>Nom<input id="f_nom" value="${esc(p.nom)}" placeholder="Stickbait 140 mm thon"></label>
   <div class="grid2"><label>Domaine<select id="f_dom">${opt(DOMAINES,p.domaine)}</select></label>
   <label>Statut<select id="f_stat">${opt(STATUTS,p.statut)}</select></label>
-  <label>Budget (€)<input id="f_bud" type="number" step="any" value="${p.budget??""}"></label>
+  <label>Budget (€)<input id="f_bud" type="text" inputmode="decimal" autocomplete="off" value="${vIn(p.budget??"")}"></label>
   <label>Échéance<input id="f_ech" type="date" value="${esc(p.echeance)}"></label></div>
   <div><h3 style="margin-bottom:.4rem">Tâches</h3><div id="taches" style="display:flex;flex-direction:column;gap:.4rem"></div>
   <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpTaches.push({id:uid(),txt:'',fait:false});drawTaches(true)">Ajouter une tâche</button></div>
+  ${id?blocDepenses(p):`<div class="bloc-in"><h3 style="margin-bottom:.4rem">Dépenses</h3><div id="deps"></div><button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="tmpDep.push({id:uid(),date:new Date().toISOString().slice(0,10),nom:'',montant:''});drawDeps(true)">Ajouter une dépense</button></div>`}
+  ${blocLiens()}
   ${mediaBlock()}
   <label>Notes<textarea id="f_notes">${esc(p.notes)}</textarea></label>`+actions("projets",id);
-  drawTaches();drawMedia("projets",id);
+  drawTaches();drawDeps();drawLiens();drawMedia("projets",id);
   wire("projets",id,()=>{if(!val("f_nom")){toast("Donne un nom au projet");return}
-    return{id:p.id||uid(),nom:val("f_nom"),domaine:val("f_dom"),statut:val("f_stat"),budget:num("f_bud"),echeance:val("f_ech"),notes:val("f_notes"),taches:tmpTaches.filter(t=>t.txt.trim())}});
+    return{id:p.id||uid(),nom:val("f_nom"),domaine:val("f_dom"),statut:val("f_stat"),budget:num("f_bud"),echeance:val("f_ech"),notes:val("f_notes"),taches:tmpTaches.filter(t=>t.txt.trim()),liens:liensSaisis(),depenses:tmpDep.filter(d=>(d.nom||"").trim()||pnum(d.montant)).map(d=>({id:d.id||uid(),date:d.date||"",nom:(d.nom||"").trim(),montant:pnum(d.montant)}))}});
   dlg.showModal();
 }
+let tmpDep=[];
+const depensesProjet=p=>{const ach=S.mouvements.filter(m=>m.projetId===p.id&&m.motif==="achat").reduce((s,m)=>s+(Number(m.cout)||0),0);
+  const fab=S.fabrications.filter(f=>f.projetId===p.id).reduce((s,f)=>s+(Number(f.cout)||0),0);
+  const div=(p.depenses||[]).reduce((s,d)=>s+(Number(d.montant)||0),0);return{ach,fab,div,tot:ach+fab+div}};
+function blocDepenses(p){const d=depensesProjet(p),b=Number(p.budget)||0,pct=b?Math.min(100,d.tot/b*100):0,k=!b?"ok":d.tot>b?"crit":d.tot>b*0.85?"warn":"ok";
+  return`<div class="bloc-in"><h3 style="margin-bottom:.4rem">Dépenses</h3>
+  ${b?`<div class="jg-t" style="margin:.2rem 0 .3rem"><i class="s-${k}" style="width:${pct}%"></i></div><p class="sub st-${k}" style="margin:0 0 .5rem">${ICO_NIV[k]} ${eur(d.tot)} dépensés sur ${eur(b)} de budget${d.tot>b?`, dépassement de ${eur(d.tot-b)}`:""}</p>`:`<p class="sub" style="margin:0 0 .5rem">${eur(d.tot)} dépensés. Indique un budget pour suivre l'écart.</p>`}
+  <div class="mv"><span class="mv-n">Achats de stock liés<small>enregistrés depuis le Stock avec ce projet</small></span><span class="mv-c num">${eur(d.ach)}</span></div>
+  <div class="mv"><span class="mv-n">Leurres fabriqués<small>coût de revient des fabrications liées</small></span><span class="mv-c num">${eur(d.fab)}</span></div>
+  <div id="deps" style="margin-top:.4rem"></div>
+  <button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="tmpDep.push({id:uid(),date:new Date().toISOString().slice(0,10),nom:'',montant:''});drawDeps(true)">Ajouter une dépense</button></div>`}
+function drawDeps(focus){const z=$("#deps");if(!z)return;
+  z.innerHTML=tmpDep.map((x,i)=>`<div class="lien"><input type="date" value="${esc(x.date)}" oninput="tmpDep[${i}].date=this.value" aria-label="Date" style="max-width:9.5rem"><input value="${esc(x.nom)}" placeholder="Dépense (ex. peinture, outil)" oninput="tmpDep[${i}].nom=this.value" aria-label="Libellé"><input value="${esc(vIn(x.montant))}" type="text" inputmode="decimal" placeholder="€" style="max-width:6rem" oninput="tmpDep[${i}].montant=this.value" aria-label="Montant en euros"><button type="button" class="x" aria-label="Retirer" onclick="tmpDep.splice(${i},1);drawDeps()">×</button></div>`).join("");
+  if(focus){const l=z.querySelectorAll('input[placeholder^="Dépense"]');l[l.length-1]?.focus()}}
 function drawTaches(focus){
   $("#taches").innerHTML=tmpTaches.map((t,i)=>`<div class="task"><input type="checkbox" ${t.fait?"checked":""} onchange="tmpTaches[${i}].fait=this.checked" aria-label="Fait"><input type="text" value="${esc(t.txt)}" oninput="tmpTaches[${i}].txt=this.value" placeholder="Décrire la tâche"><button class="x" aria-label="Retirer" onclick="tmpTaches.splice(${i},1);drawTaches()">×</button></div>`).join("");
   if(focus){const ins=$("#taches").querySelectorAll("input[type=text]");ins[ins.length-1]?.focus()}
@@ -474,36 +665,46 @@ function drawTaches(focus){
 let tmpBom=[];
 function editLeurre(id){
   const l=S.leurres.find(x=>x.id===id)||{version:"V1",bom:[]};
-  tmpBom=JSON.parse(JSON.stringify(l.bom||[]));
+  tmpBom=JSON.parse(JSON.stringify(l.bom||[]));tmpLiens=JSON.parse(JSON.stringify(l.liens||[]));
   body.innerHTML=`<h2>${id?"Fiche leurre":"Nouvelle fiche leurre"}</h2>
   <div class="grid2"><label>Modèle<input id="f_nom" value="${esc(l.nom)}" placeholder="Stickbait thon"></label>
   <label>Version<input id="f_ver" value="${esc(l.version)}"></label>
   <label>Corps (matière)<select id="f_corps"><option value="">Choisir</option>${opt(MATIERES_CORPS.includes(l.corps)||!l.corps?MATIERES_CORPS:[...MATIERES_CORPS,l.corps],l.corps)}</select></label>
   <label>Type de nage<input id="f_nage" value="${esc(l.nage)}" placeholder="Wobbling, glissé…"></label>
-  <label>Longueur (mm)<input id="f_long" type="number" value="${l.longueur??""}"></label>
-  <label>Poids (g)<input id="f_poids" type="number" step="any" value="${l.poids??""}"></label></div>
+  <label>Longueur (mm)<input id="f_long" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.longueur??"")}"></label>
+  <label>Poids (g)<input id="f_poids" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.poids??"")}"></label></div>
   <div><h3 style="margin-bottom:.4rem">Nomenclature (pour 1 leurre)</h3><div id="bom" style="display:flex;flex-direction:column;gap:.4rem"></div>
   <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpBom.push({cat:'',articleId:'',qte:''});drawBom()">Ajouter un composant</button>
   <p class="sub" id="cout" style="margin:.5rem 0 0"></p></div>
-  <label>Essais et observations<textarea id="f_notes" placeholder="Nage à 6 nœuds, profondeur, captures…">${esc(l.notes)}</textarea></label>
+  <div class="bloc-in"><h3 style="margin-bottom:.4rem">Impression 3D</h3>
+    <div class="grid2"><label>Temps d'impression (h)<input id="f_imph" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.impH??"")}" placeholder="Ex. 3,5 ou 3h30" oninput="majCout()"></label>
+    <label>Importer depuis le slicer<span class="btn ghost sm" style="text-align:center;cursor:pointer;position:relative">Choisir un fichier G-code<input type="file" accept=".gcode,.gco,.g,.bgcode" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="importerGcode(this.files[0])"></span></label></div>
+    <p class="sub" id="gcinfo" style="margin:.4rem 0 0">Le G-code remplit le temps d'impression et le poids de filament de la nomenclature. Coût électrique selon tes réglages.</p></div>
+  <label>Notes<textarea id="f_notes" placeholder="Idées, réglages, modifications à faire…">${esc(l.notes)}</textarea></label>
+  ${blocLiens(l.liens)}
+  ${id?blocEssais(id):""}
   ${mediaBlock()}
   ${id?`<div style="border-top:1px solid var(--line);padding-top:.8rem"><h3 style="margin-bottom:.4rem">Fabrication</h3>
-    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><label style="flex-direction:row;align-items:center;gap:.4rem;color:var(--ink)">Quantité<input id="f_nfab" type="number" min="1" step="1" value="1" style="width:5rem"></label><button class="btn ghost" id="fab">Fabriquer (déduit le stock)</button></div>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><label style="flex-direction:row;align-items:center;gap:.4rem;color:var(--ink)">Quantité<input id="f_nfab" type="number" min="1" step="1" value="1" style="width:5rem"></label><select id="f_fproj" style="flex:1;min-width:9rem" aria-label="Projet">${optProjets()}</select><button class="btn ghost" id="fab">Fabriquer (déduit le stock)</button></div>
     <p class="sub" style="margin:.4rem 0 0">${(()=>{const fs=S.fabrications.filter(z=>z.leurreId===id),n=fs.reduce((s,z)=>s+(Number(z.n)||0),0);return n?`Déjà fabriqué ${n} fois, dernière le ${new Date(fs.map(z=>z.date).sort().pop()).toLocaleDateString("fr-FR")}.`:"Jamais fabriqué."})()}</p></div>`:""}`+actions("leurres",id);
-  drawBom();drawMedia("leurres",id);
+  drawBom();drawLiens();drawMedia("leurres",id);
   wire("leurres",id,()=>{if(!val("f_nom")){toast("Donne un nom au modèle");return}
-    return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:Number(b.qte)||0}))}});
+    return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),impH:parseDuree($("#f_imph").value),liens:liensSaisis(),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:pnum(b.qte)}))}});
   if(id)$("#fab").onclick=async()=>{
+    const norm=x=>JSON.stringify((x||[]).filter(b=>b.articleId).map(b=>[b.articleId,pnum(b.qte)]));
+    if(norm(tmpBom)!==norm(l.bom)){toast("La nomenclature a changé : enregistre la fiche avant de fabriquer");return}
     const n=Math.max(1,Math.round(num("f_nfab")||1)),bom=(l.bom||[]).filter(b=>b.articleId&&Number(b.qte)>0);
     if(!bom.length){toast("Ajoute d'abord des composants à la nomenclature, puis enregistre");return}
     const tot={};bom.forEach(b=>tot[b.articleId]=(tot[b.articleId]||0)+Number(b.qte)*n);
     const absents=Object.keys(tot).filter(i=>!art(i));if(absents.length){toast("Un composant a été supprimé du stock : corrige la nomenclature");return}
     const manque=Object.keys(tot).filter(i=>(Number(art(i).qte)||0)<tot[i]);
     if(manque.length){toast("Stock insuffisant : "+manque.map(i=>nomArt(art(i))).join(", "));return}
-    const fab={id:uid(),date:new Date().toISOString(),leurreId:l.id,nom:l.nom,version:l.version||"",n,cout:Math.round(coutLeurre(l)*n*100)/100,
-      conso:Object.keys(tot).map(i=>({articleId:i,nom:nomArt(art(i)),qte:Math.round(tot[i]*1000)/1000,unite:art(i).unite||""}))};
+    const fabId=uid(),projetId=val("f_fproj");
+    const mv=Object.keys(tot).map(i=>mvt(art(i),-tot[i],"fabrication",{ref:fabId,projetId}));
+    const fab={date:new Date().toISOString(),leurreId:l.id,nom:l.nom,version:l.version||"",n,projetId,cout:Math.round(coutLeurre(l)*n*100)/100,coutImp:Math.round(coutImp(l)*n*100)/100,
+      conso:Object.keys(tot).map(i=>({articleId:i,nom:nomArt(art(i)),qte:Math.round(tot[i]*1000)/1000,unite:art(i).unite||""})),mvtIds:mv.map(m=>m.id)};
     dlg.close();
-    try{await store.fabriquer(Object.entries(tot).map(([i,q])=>[i,-q]),fab);toast(n+" × "+l.nom+" fabriqué"+(n>1?"s":"")+", stock déduit")}
+    try{await store.batch([...Object.entries(tot).map(([i,q])=>({op:"inc",c:"articles",id:i,d:-q})),{op:"set",c:"fabrications",id:fabId,data:fab},...mv]);toast(n+" × "+l.nom+" fabriqué"+(n>1?"s":"")+", stock déduit")}
     catch(e){toast("Échec, stock inchangé ("+(e.code||"erreur")+")")}
   };
   dlg.showModal();
@@ -516,11 +717,87 @@ function drawBom(){
     return`<div class="bomline" style="flex-wrap:wrap">
     <select style="flex:1 1 7.5rem" aria-label="Domaine" onchange="tmpBom[${i}].cat=this.value;tmpBom[${i}].articleId='';drawBom()"><option value="">Domaine</option>${cats.map(c=>`<option ${c===b.cat?"selected":""}>${esc(c)}</option>`).join("")}</select>
     <select style="flex:2 1 10rem" aria-label="Article" ${b.cat?"":"disabled"} onchange="tmpBom[${i}].articleId=this.value;drawBom()"><option value="">${b.cat?"Choisir un article":"Choisis d'abord le domaine"}</option>${liste.map(x=>`<option value="${x.id}" ${x.id===b.articleId?"selected":""}>${esc(nomArt(x))}</option>`).join("")}</select>
-    <span style="display:flex;align-items:center;gap:.3rem"><input type="number" step="any" min="0" value="${esc(b.qte)}" placeholder="Qté" oninput="tmpBom[${i}].qte=this.value;majCout()" aria-label="Quantité" style="width:5.5rem"><span class="sub" style="min-width:2rem">${esc(a?.unite||"")}</span></span>
+    <span style="display:flex;align-items:center;gap:.3rem"><input type="text" inputmode="decimal" autocomplete="off" value="${esc(vIn(b.qte))}" placeholder="Qté" oninput="tmpBom[${i}].qte=this.value;majCout()" aria-label="Quantité" style="width:5.5rem"><span class="sub" style="min-width:2rem">${esc(a?.unite||"")}</span></span>
     <button class="x" aria-label="Retirer" onclick="tmpBom.splice(${i},1);drawBom()">×</button></div>`}).join("");
   majCout();
 }
-function majCout(){$("#cout").textContent="Coût de revient : "+eur(coutLeurre({bom:tmpBom}))}
+function majCout(){const x={bom:tmpBom,impH:$("#f_imph")?parseDuree($("#f_imph").value):0},m=coutMat(x),i=coutImp(x);
+  $("#cout").textContent="Coût de revient : "+eur(m+i)+(i>0?` (matières ${eur(m)} + impression ${eur(i)})`:"")}
+function parseDuree(v){v=String(v||"").trim().toLowerCase();if(!v)return 0;
+  const m=v.match(/^(?:(\d+)\s*j)?\s*(?:(\d+)\s*h)?\s*(?:(\d+)\s*(?:m|min))?$/);
+  if(m&&(m[1]||m[2]||m[3])&&/[jhm]/.test(v)){const h=(+m[1]||0)*24+(+m[2]||0)+(+m[3]||0)/60;return Math.round(h*100)/100}
+  const hm=v.match(/^(\d+)h(\d+)$/);if(hm)return Math.round((+hm[1]+hm[2]/60)*100)/100;
+  return pnum(v)}
+const DENS={PLA:1.24,PETG:1.27,ABS:1.04,ASA:1.07,TPU:1.21};
+async function importerGcode(f){if(!f)return;
+  const tete=await f.slice(0,300000).text(),queue=f.size>300000?await f.slice(Math.max(0,f.size-300000)).text():"",t=tete+"\n"+queue;
+  let g=0,h=0,mm=0;
+  let r=t.match(/;\s*(?:total )?filament used \[g\]\s*[=:]\s*([\d.,\s]+)/i)||t.match(/;\s*total filament weight(?: \[g\])?\s*[=:]\s*([\d.]+)/i);
+  if(r)g=r[1].split(",").map(Number).filter(isFinite).reduce((a,b)=>a+b,0);
+  if(!g&&(r=t.match(/;\s*Filament used:\s*([\d.]+)\s*m/i)))mm=parseFloat(r[1])*1000;
+  if(!g&&(r=t.match(/;\s*filament used \[mm\]\s*=\s*([\d.,\s]+)/i)))mm=r[1].split(",").map(Number).filter(isFinite).reduce((a,b)=>a+b,0);
+  const tps=t.match(/;\s*(?:estimated printing time(?: \(normal mode\))?|total estimated time|model printing time)\s*[=:]\s*([^\n;]+)/i);
+  if(tps){const x=tps[1];const v=k=>{const m=x.match(new RegExp("(\\d+)\\s*"+k));return m?+m[1]:0};h=v("d")*24+v("h")+v("m")/60+v("s")/3600}
+  if(!h&&(r=t.match(/;TIME:(\d+)/)))h=+r[1]/3600;
+  const fils=tmpBom.map((b,i)=>({b,i,a:art(b.articleId)})).filter(x=>x.b.cat==="Filament"||x.a?.categorie==="Filament");
+  if(!g&&mm){const dens=DENS[fils[0]?.a?.matiere]||1.24;g=mm/10*Math.PI*0.0875*0.0875*dens}
+  g=Math.round(g*10)/10;h=Math.round(h*100)/100;
+  if(!g&&!h){$("#gcinfo").textContent="Aucune information de poids ou de temps trouvée dans ce fichier. Vérifie qu'il vient bien du slicer (Creality Print, Orca, Prusa, Cura).";return}
+  if(h)$("#f_imph").value=vIn(h);
+  let msg=`Lu dans le G-code : ${g?fmt(g,1)+" g de filament":""}${g&&h?", ":""}${h?fmt(h)+" h d'impression":""}.`;
+  if(g){if(fils.length===1){fils[0].b.qte=g;msg+=" Poids reporté sur la ligne filament."}
+    else if(!fils.length){tmpBom.push({cat:"Filament",articleId:"",qte:g});msg+=" Choisis le filament dans la nouvelle ligne de la nomenclature."}
+    else msg+=" Plusieurs filaments dans la nomenclature : répartis le poids à la main."}
+  drawBom();$("#gcinfo").textContent=msg+" Pense à enregistrer.";
+}
+
+/* ---------- Essais et prises ---------- */
+const prisesDe=id=>S.essais.filter(e=>e.leurreId===id).reduce((s,e)=>s+(e.prises||[]).length,0);
+function blocEssais(lid){const E=S.essais.filter(e=>e.leurreId===lid).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const np=E.reduce((s,e)=>s+(e.prises||[]).length,0);
+  return`<div class="bloc-in" id="essaisBloc"><h3 style="margin-bottom:.2rem">Essais et sorties</h3><p class="sub" style="margin:0 0 .5rem">${E.length?`${E.length} sortie${E.length>1?"s":""}, ${np} prise${np>1?"s":""}.`:"Note chaque essai de nage et chaque sortie de pêche avec ce leurre."}</p>
+  ${E.slice(0,10).map(e=>`<button type="button" class="essai" onclick="editEssai('${lid}','${e.id}')"><span class="mv-d">${e.date?new Date(e.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"}):""}</span><span class="mv-n">${esc(e.lieu||"Lieu non précisé")}<small>${[e.type==="essai"?"Essai de nage":"Sortie de pêche",e.vitesse&&e.vitesse+" nœuds",e.note?"★".repeat(e.note):""].filter(Boolean).join(", ")}</small></span><span class="mv-c">${(e.prises||[]).length?(e.prises||[]).map(p=>esc(p.espece)).join(", "):"Aucune prise"}</span></button>`).join("")}
+  <button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="editEssai('${lid}')">Ajouter un essai ou une sortie</button></div>`}
+let tmpPrises=[];
+function editEssai(lid,eid){
+  const e=S.essais.find(x=>x.id===eid)||{type:"sortie",date:new Date().toISOString().slice(0,10),prises:[]};
+  tmpPrises=JSON.parse(JSON.stringify(e.prises||[]));
+  const noms=[...new Set(ESP.filter(x=>x.roles.includes("predateur")).map(x=>x.nom))].sort();
+  const vb=$("#viewerBody");
+  vb.innerHTML=`<h2>${eid?"Modifier":"Nouvel"} essai ou sortie</h2><datalist id="dl_esp">${noms.map(n=>`<option value="${esc(n)}">`).join("")}</datalist>
+  <div class="grid2"><label>Type<select id="e_type"><option value="sortie" ${e.type!=="essai"?"selected":""}>Sortie de pêche</option><option value="essai" ${e.type==="essai"?"selected":""}>Essai de nage</option></select></label>
+  <label>Date<input id="e_date" type="date" value="${esc(e.date)}"></label>
+  <label>Lieu<input id="e_lieu" value="${esc(e.lieu)}" placeholder="Pointe de Gâvres, passe de Dumbéa…"></label>
+  <label>Vitesse de traîne (nœuds)<input id="e_vit" type="text" inputmode="decimal" value="${vIn(e.vitesse??"")}"></label>
+  <label>Conditions<input id="e_cond" value="${esc(e.conditions)}" placeholder="Mer, vent, marée, eau…"></label>
+  <label>Note du leurre<select id="e_note">${["","1","2","3","4","5"].map(n=>`<option value="${n}" ${String(e.note||"")===n?"selected":""}>${n?"★".repeat(+n):"Pas de note"}</option>`).join("")}</select></label></div>
+  <div><h3 style="margin-bottom:.4rem">Prises</h3><div id="prises" style="display:flex;flex-direction:column;gap:.4rem"></div>
+  <button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="tmpPrises.push({espece:'',taille:'',poids:''});drawPrises(true)">Ajouter une prise</button></div>
+  <label>Observations<textarea id="e_obs" placeholder="Nage, profondeur, comportement, attaques ratées…">${esc(e.obs)}</textarea></label>
+  <div class="actions">${eid?`<button class="btn danger" onclick="supprEssai('${eid}')">Supprimer</button>`:""}<span class="spacer"></span><button class="btn ghost" onclick="viewer.close()">Annuler</button><button class="btn" onclick="enregEssai('${lid}','${eid||""}')">Enregistrer</button></div>`;
+  drawPrises();if(!viewer.open)viewer.showModal();
+}
+function drawPrises(focus){$("#prises").innerHTML=tmpPrises.map((p,i)=>`<div class="lien"><input list="dl_esp" value="${esc(p.espece)}" placeholder="Espèce" oninput="tmpPrises[${i}].espece=this.value" aria-label="Espèce"><input value="${esc(vIn(p.taille))}" type="text" inputmode="decimal" placeholder="Taille (cm)" style="max-width:6.5rem" oninput="tmpPrises[${i}].taille=this.value" aria-label="Taille en cm"><input value="${esc(vIn(p.poids))}" type="text" inputmode="decimal" placeholder="Poids (kg)" style="max-width:6.5rem" oninput="tmpPrises[${i}].poids=this.value" aria-label="Poids en kg"><button type="button" class="x" aria-label="Retirer" onclick="tmpPrises.splice(${i},1);drawPrises()">×</button></div>`).join("");
+  if(focus){const l=$("#prises").querySelectorAll('input[list]');l[l.length-1]?.focus()}}
+async function enregEssai(lid,eid){
+  const d={leurreId:lid,type:val("e_type"),date:val("e_date"),lieu:val("e_lieu"),vitesse:num("e_vit")||null,conditions:val("e_cond"),note:+val("e_note")||0,obs:val("e_obs"),
+    prises:tmpPrises.filter(p=>(p.espece||"").trim()).map(p=>({espece:p.espece.trim(),taille:pnum(p.taille)||null,poids:pnum(p.poids)||null}))};
+  viewer.close();await save("essais",{id:eid||uid(),...d});toast("Enregistré");majBlocEssais(lid);
+}
+async function supprEssai(eid){if(!confirm("Supprimer cette sortie ?"))return;const lid=S.essais.find(x=>x.id===eid)?.leurreId;viewer.close();await remove("essais",eid);toast("Supprimé");if(lid)majBlocEssais(lid)}
+function majBlocEssais(lid){const z=$("#essaisBloc");if(z&&dlg.open)z.outerHTML=blocEssais(lid)}
+
+/* ---------- Réglages ---------- */
+function editReglages(){const r=REG();
+  body.innerHTML=`<h2>Réglages</h2><p class="sub" style="margin:0">Servent à calculer le coût d'impression des leurres.</p>
+  <div class="grid2"><label>Prix de l'électricité (€/kWh)<input id="r_kwh" type="text" inputmode="decimal" value="${vIn(r.kwh??0.25)}"></label>
+  <label>Puissance moyenne de l'imprimante (W)<input id="r_w" type="text" inputmode="decimal" value="${vIn(r.watts??300)}"></label>
+  <label>Usure et entretien (€/h)<input id="r_us" type="text" inputmode="decimal" value="${vIn(r.usure??0)}"></label></div>
+  <p class="sub" style="margin:0">Puissance moyenne : environ 150 à 350 W selon le plateau et la chambre chauffés. Un wattmètre sur la prise donne la vraie valeur. Usure : buses, plateaux, pièces, ramenés à l'heure.</p>
+  <p class="sub" style="margin:0">Dernier export : ${r.dernierExport?new Date(r.dernierExport).toLocaleDateString("fr-FR"):"jamais"}.</p>
+  <div class="actions"><span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" onclick="majReglages({kwh:num('r_kwh'),watts:num('r_w'),usure:num('r_us')}).then(()=>{dlg.close();toast('Réglages enregistrés')})">Enregistrer</button></div>`;
+  dlg.showModal();
+}
 
 /* ---------- Références : tableaux libres ---------- */
 const MODELES=[
@@ -643,6 +920,7 @@ function refCard(r){
   ${r.description?`<p style="margin:0 0 .6rem">${esc(r.description)}</p>`:""}
   <div class="tw"><table class="ref"><thead><tr>${cols.map(c=>`<th>${esc(c)}</th>`).join("")}</tr></thead><tbody>${rows.map(rw=>`<tr>${cols.map((c,i)=>`<td class="${num(rw[i]??"")?"n":""}">${esc(rw[i]??"")}</td>`).join("")}</tr>`).join("")}</tbody></table></div>
   ${r.notes?`<p>${esc(r.notes)}</p>`:""}
+  ${(r.liens||[]).length?`<p>${r.liens.map(x=>`<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.nom)}</a>`).join(" · ")}</p>`:""}
   ${r.source?`<p>Source : ${/^https?:\/\//.test(r.source)?`<a href="${esc(r.source)}" target="_blank" rel="noopener">${esc(r.source.replace(/^https?:\/\/(www\.)?/,"").split("/")[0])}</a>`:esc(r.source)}</p>`:""}
   ${(r.medias||[]).length?`<p>${r.medias.length} média${r.medias.length>1?"s":""} attaché${r.medias.length>1?"s":""} (ouvre « Modifier »)</p>`:""}</section>`;
 }
@@ -654,7 +932,7 @@ async function ajouterModeles(){
 let tmpRef=null;
 function editRef(id){
   const r=S.refs.find(x=>x.id===id)||{categorie:"Divers",colonnes:["Colonne 1","Colonne 2"],lignes:[{v:["",""]}]};
-  tmpRef={colonnes:[...(r.colonnes||[])],lignes:(r.lignes||[]).map(x=>[...(x.v||[])])};
+  tmpRef={colonnes:[...(r.colonnes||[])],lignes:(r.lignes||[]).map(x=>[...(x.v||[])])};tmpLiens=JSON.parse(JSON.stringify(r.liens||[]));
   const cats=[...new Set(["Hameçons","Leurres","Impression 3D","Résines","Matériaux","Pêche","Divers",...S.refs.map(x=>x.categorie).filter(Boolean)])];
   body.innerHTML=`<h2>${id?"Modifier le tableau":"Nouveau tableau"}</h2>
   <label>Titre<input id="f_nom" value="${esc(r.titre)}" placeholder="Taille d'hameçon selon le leurre"></label>
@@ -664,11 +942,12 @@ function editRef(id){
   <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem"><button type="button" class="btn ghost sm" onclick="gridOp('row+')">Ajouter une ligne</button><button type="button" class="btn ghost sm" onclick="gridOp('col+')">Ajouter une colonne</button><button type="button" class="btn ghost sm" onclick="gridOp('col-')">Retirer la dernière colonne</button></div></div>
   <label>Notes<textarea id="f_notes">${esc(r.notes)}</textarea></label>
   <label>Source (lien ou référence)<input id="f_src" value="${esc(r.source)}" placeholder="https://…"></label>
+  ${blocLiens()}
   ${mediaBlock()}`+actions("refs",id);
-  drawGrid();drawMedia("refs",id);
+  drawGrid();drawLiens();drawMedia("refs",id);
   wire("refs",id,()=>{if(!val("f_nom")){toast("Donne un titre au tableau");return}
     const n=tmpRef.colonnes.length;
-    return{id:r.id||uid(),titre:val("f_nom"),categorie:val("f_cat")||"Divers",description:val("f_desc"),notes:val("f_notes"),source:val("f_src"),
+    return{id:r.id||uid(),liens:liensSaisis(),titre:val("f_nom"),categorie:val("f_cat")||"Divers",description:val("f_desc"),notes:val("f_notes"),source:val("f_src"),
       colonnes:tmpRef.colonnes.map((c,i)=>c.trim()||"Colonne "+(i+1)),
       lignes:tmpRef.lignes.filter(l=>l.some(x=>String(x||"").trim())).map(l=>({v:Array.from({length:n},(_,i)=>String(l[i]??"").trim())}))}});
   dlg.showModal();
@@ -776,7 +1055,7 @@ try{
   else{
     const [{initializeApp},fs,au]=await Promise.all([import(B+"firebase-app.js"),import(B+"firebase-firestore.js"),import(B+"firebase-auth.js")]);
     const app=initializeApp(firebaseConfig);
-    window.FB={ok:true,db:fs.getFirestore(app),collection:fs.collection,doc:fs.doc,setDoc:fs.setDoc,deleteDoc:fs.deleteDoc,onSnapshot:fs.onSnapshot,updateDoc:fs.updateDoc,increment:fs.increment,arrayUnion:fs.arrayUnion,arrayRemove:fs.arrayRemove,writeBatch:fs.writeBatch,
+    window.FB={ok:true,db:fs.getFirestore(app),collection:fs.collection,doc:fs.doc,setDoc:fs.setDoc,deleteDoc:fs.deleteDoc,onSnapshot:fs.onSnapshot,query:fs.query,orderBy:fs.orderBy,limit:fs.limit,updateDoc:fs.updateDoc,increment:fs.increment,arrayUnion:fs.arrayUnion,arrayRemove:fs.arrayRemove,writeBatch:fs.writeBatch,
       auth:au.getAuth(app),onAuthStateChanged:au.onAuthStateChanged,signInWithEmailAndPassword:au.signInWithEmailAndPassword,signOut:au.signOut};
   }
 }catch(e){ window.FB={ok:false,err:String(e)}; }
