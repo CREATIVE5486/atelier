@@ -81,6 +81,9 @@ section.block > h2{margin-bottom:.6rem}
 .filters button{border:1px solid var(--line);background:var(--panel);border-radius:99px;padding:.25rem .8rem;font-size:.9rem}
 .filters button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .qty{display:flex;align-items:center;gap:.25rem}
+.lock{display:inline-flex;align-items:center;gap:.4rem}
+.lock.open{border-color:var(--accent);color:var(--ink);background:color-mix(in srgb,var(--accent) 18%,transparent)}
+.qty button:disabled{opacity:.3;cursor:not-allowed}
 .qty button{width:2rem;height:2rem;border:1px solid var(--line);background:var(--panel);border-radius:6px;font-weight:600}
 
 dialog{border:0;border-radius:12px;padding:0;width:min(560px,94vw);max-height:90vh;background:var(--panel);color:var(--ink)}
@@ -99,6 +102,9 @@ input[type=checkbox]{width:1.2rem;height:1.2rem;flex:none;padding:0}
 .x{border:0;background:none;color:var(--muted);font-size:1.3rem;padding:0 .3rem}
 .toast{position:fixed;left:50%;bottom:calc(5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.6rem 1rem;border-radius:8px;font-size:.95rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
 .toast.show{opacity:1}
+.toast{width:max-content;max-width:92vw}
+.toast.act{pointer-events:auto;display:flex;align-items:center;gap:1rem}
+.toast button{background:none;border:0;color:var(--accent);font-weight:700;padding:.2rem .3rem;text-decoration:underline}
 
 @media (max-width:760px){
   .app{grid-template-columns:1fr}
@@ -179,8 +185,8 @@ table.ref td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
 <script src="especes.js"></script>
 <script>
 /* ---------- Données ---------- */
-const COLS=["projets","articles","leurres","refs"];
-const S={projets:[],articles:[],leurres:[],refs:[]};
+const COLS=["projets","articles","leurres","refs","fabrications","photos"];
+const S={projets:[],articles:[],leurres:[],refs:[],fabrications:[],photos:[]};
 let view="accueil", filtre="tous", store=null, refSel=null;
 
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -199,6 +205,8 @@ function cloudStore(uidv){
     async update(c,id,f){await F.updateDoc(this.ref(c,id),JSON.parse(JSON.stringify(f)))},
     async inc(c,id,d){await F.updateDoc(this.ref(c,id),{qte:F.increment(d)})},
     async batchInc(c,list){const b=F.writeBatch(F.db);list.forEach(([id,d])=>b.update(this.ref(c,id),{qte:F.increment(d)}));await b.commit()},
+    async fabriquer(deltas,fab){const b=F.writeBatch(F.db);deltas.forEach(([id,d])=>b.update(this.ref("articles",id),{qte:F.increment(d)}));const {id,...data}=fab;b.set(this.ref("fabrications",id),JSON.parse(JSON.stringify(data)));await b.commit()},
+    async annulerFab(deltas,fabId){const b=F.writeBatch(F.db);deltas.forEach(([id,d])=>b.update(this.ref("articles",id),{qte:F.increment(d)}));b.delete(this.ref("fabrications",fabId));await b.commit()},
     async addMedia(c,id,m){await F.updateDoc(this.ref(c,id),{medias:F.arrayUnion(m)})},
     async removeMedia(c,id,m){await F.updateDoc(this.ref(c,id),{medias:F.arrayRemove(m)})},
     async remove(c,id){await F.deleteDoc(this.ref(c,id))}
@@ -243,10 +251,30 @@ function exporter(){
 }
 
 /* ---------- Calculs ---------- */
+const CATCFG={
+  "Filament":{unites:["g"],lot:1000,lotNom:"bobine",lotsNom:"bobines",fem:1},
+  "Résine":{unites:["ml","g"],lot:1000,lotNom:"kit",lotsNom:"kits"},
+  "Quincaillerie":{unites:["pcs","cm","m","g"],lot:10,lotNom:"sachet",lotsNom:"sachets"},
+  "Hameçons":{unites:["pcs"],lot:10,lotNom:"sachet",lotsNom:"sachets"},
+  "Peinture":{unites:["ml","g"],lot:30,lotNom:"flacon",lotsNom:"flacons"},
+  "Bavettes":{unites:["pcs","cm²"],lot:1,lotNom:"plaque",lotsNom:"plaques",fem:1},
+  "Outillage":{unites:["pcs"],lot:1,lotNom:"pièce",lotsNom:"pièces",fem:1},
+  "Autre":{unites:["pcs","g","ml","cm","m"],lot:1,lotNom:"lot",lotsNom:"lots"}
+};
+const CATS=Object.keys(CATCFG);
+const FILAMENTS=["PLA","PETG","ABS","ASA","TPU"];
+const MATIERES_CORPS=["ASA","PETG","PLA","ABS","TPU","Résine","Bois","Autre"];
+const cfg=a=>CATCFG[a?.categorie]||CATCFG.Autre;
+const fmt=(n,d=2)=>(Number(n)||0).toLocaleString("fr-FR",{maximumFractionDigits:d});
 const art=id=>S.articles.find(a=>a.id===id);
-const coutLeurre=l=>(l.bom||[]).reduce((s,b)=>s+(Number(art(b.articleId)?.prix)||0)*(Number(b.qte)||0),0);
+const lotQ=a=>Number(a?.lotQte)>0?Number(a.lotQte):cfg(a).lot;
+const pu=a=>!a?0:(Number(a.prixLot)>0&&lotQ(a)>0?Number(a.prixLot)/lotQ(a):(Number(a.prix)||0));
+const nomArt=a=>a?(a.nom||[a.matiere,a.couleur].filter(Boolean).join(" ")||"Sans nom"):"Article supprimé";
+const enLots=a=>{const n=(Number(a.qte)||0)/lotQ(a),c=cfg(a);return fmt(n)+" "+(n>1?c.lotsNom:c.lotNom)};
+const coutLeurre=l=>(l.bom||[]).reduce((s,b)=>s+pu(art(b.articleId))*(Number(b.qte)||0),0);
 const stockBas=()=>S.articles.filter(a=>Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil));
 const fabricables=l=>{const r=(l.bom||[]).filter(b=>Number(b.qte)>0).map(b=>Math.floor((Number(art(b.articleId)?.qte)||0)/Number(b.qte)));return r.length?Math.min(...r):0};
+const dot=a=>a?.teinte?`<span aria-hidden="true" style="display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:${esc(a.teinte)};border:1px solid var(--line);vertical-align:-1px;margin-right:.35rem"></span>`:"";
 const avancement=p=>{const t=p.taches||[];return t.length?Math.round(100*t.filter(x=>x.fait).length/t.length):0};
 
 /* ---------- Rendu ---------- */
@@ -259,7 +287,8 @@ const head=(t,btn)=>`<div class="head"><div><h1>${t}</h1><div class="mob-sync" i
 
 function vAccueil(){
   const bas=stockBas(), actifs=S.projets.filter(p=>p.statut==="En cours");
-  const valeur=S.articles.reduce((s,a)=>s+(Number(a.qte)||0)*(Number(a.prix)||0),0);
+  const valeur=S.articles.reduce((s,a)=>s+(Number(a.qte)||0)*pu(a),0);
+  const mois=new Date().toISOString().slice(0,7),fabMois=S.fabrications.filter(f=>(f.date||"").startsWith(mois)).reduce((s,f)=>s+(Number(f.n)||0),0);
   const taches=S.projets.flatMap(p=>(p.taches||[]).filter(t=>!t.fait).map(t=>({...t,p})));
   return head("Accueil",`<div style="display:flex;gap:.5rem;flex-wrap:wrap">${OD.pca&&!OD.compte()?`<button class="btn ghost sm" onclick="OD.connecter()">Connecter OneDrive</button>`:""}<button class="btn ghost sm" onclick="exporter()">Exporter</button><button class="btn ghost sm" onclick="logout()">Déconnexion</button></div>`)+`
   <div class="kpis">
@@ -267,9 +296,10 @@ function vAccueil(){
     <div class="kpi"><strong>${taches.length}</strong><span>tâches ouvertes</span></div>
     <div class="kpi ${bas.length?"warn":""}"><strong>${bas.length}</strong><span>articles sous le seuil</span></div>
     <div class="kpi"><strong class="num">${eur(valeur)}</strong><span>valeur du stock</span></div>
+    <div class="kpi"><strong>${fabMois}</strong><span>leurres fabriqués ce mois</span></div>
   </div>
   <section class="block"><h2>À réapprovisionner</h2><div class="list">${
-    bas.length?bas.map(a=>`<div class="row click" onclick="editArticle('${a.id}')"><div class="grow">${esc(a.nom)}<div class="sub">${esc(a.fournisseur||"Fournisseur non renseigné")}</div></div><span class="num pill alert">${a.qte} / ${a.seuil} ${esc(a.unite)}</span></div>`).join("")
+    bas.length?bas.map(a=>`<div class="row click" onclick="editArticle('${a.id}')"><div class="grow">${dot(a)}${esc(nomArt(a))}<div class="sub">${esc(a.fournisseur||"Fournisseur non renseigné")}</div></div><span class="num pill alert">${fmt(a.qte)} / ${fmt(a.seuil)} ${esc(a.unite)}</span></div>`).join("")
     :`<div class="empty">Tout le stock est au-dessus des seuils.</div>`}</div></section>
   <section class="block"><h2>Prochaines tâches</h2><div class="list">${
     taches.length?taches.slice(0,8).map(t=>`<div class="row"><input type="checkbox" aria-label="Terminer" onchange="cocher('${t.p.id}','${t.id}')"><div class="grow">${esc(t.txt)}<div class="sub">${esc(t.p.nom)}</div></div></div>`).join("")
@@ -292,28 +322,64 @@ function vProjets(){
     :`<div class="empty">Aucun projet ici. Crée-en un pour suivre tes tâches et ton budget.</div>`}</div>`;
 }
 
-const CATS=["Filament","Résine","Quincaillerie","Hameçons","Peinture","Bavettes","Outillage","Autre"];
 function vStock(){
-  const l=S.articles.filter(a=>filtre==="tous"||a.categorie===filtre).sort((a,b)=>a.nom.localeCompare(b.nom));
-  return head("Stock",`<button class="btn" onclick="editArticle()">Nouvel article</button>`)+filters(CATS)+`<div class="list">${
-    l.length?l.map(a=>{const bas=Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil);return`<div class="row"><div class="grow click" style="cursor:pointer" onclick="editArticle('${a.id}')">${esc(a.nom)}<div class="sub">${esc(a.categorie)}${a.emplacement?" · "+esc(a.emplacement):""}${a.prix?" · "+eur(a.prix)+"/"+esc(a.unite):""}</div></div>
-      <div class="qty"><button aria-label="Retirer 1" onclick="bouger('${a.id}',-1)">−</button><span class="num pill ${bas?"alert":""}" style="min-width:4.5rem;text-align:center">${a.qte} ${esc(a.unite)}</span><button aria-label="Ajouter 1" onclick="bouger('${a.id}',1)">+</button></div></div>`}).join("")
-    :`<div class="empty">Aucun article. Ajoute tes bobines, résines et hameçons avec un seuil d'alerte.</div>`}</div>`;
+  const l=S.articles.filter(a=>filtre==="tous"||a.categorie===filtre).sort((a,b)=>(CATS.indexOf(a.categorie)-CATS.indexOf(b.categorie))||nomArt(a).localeCompare(nomArt(b)));
+  const lk=stockVerrou;
+  return head("Stock",`<div style="display:flex;gap:.5rem;align-items:center"><button class="btn ghost lock ${lk?"":"open"}" onclick="basculerVerrou()" aria-pressed="${!lk}" title="${lk?"Déverrouiller les boutons + et −":"Verrouiller les boutons + et −"}">${lk?ICO_LOCK:ICO_OPEN}<span>${lk?"Verrouillé":"Déverrouillé"}</span></button><button class="btn" onclick="editArticle()">Nouvel article</button></div>`)+filters(CATS)+`<div class="list ${lk?"locked":""}">${
+    l.length?l.map(a=>{const bas=Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil),c=cfg(a),L=lotQ(a);
+      return`<div class="row"><div class="grow" style="cursor:pointer" onclick="editArticle('${a.id}')">${dot(a)}${esc(nomArt(a))}
+      <div class="sub">${esc(a.categorie)}, 1 ${c.lotNom} = ${fmt(L)} ${esc(a.unite)}${Number(a.prixLot)>0?", "+eur(a.prixLot)+(c.fem?" la ":" le ")+c.lotNom:""}</div></div>
+      <div class="qty"><button aria-label="Retirer 1 ${c.lotNom}" ${lk?"disabled":""} onclick="bouger('${a.id}',-1)">−</button>
+      <div style="text-align:center;min-width:5.5rem"><span class="num pill ${bas?"alert":""}">${fmt(a.qte)} ${esc(a.unite)}</span><div class="sub" style="font-size:.75rem">${enLots(a)}</div></div>
+      <button aria-label="Ajouter 1 ${c.lotNom}" ${lk?"disabled":""} onclick="bouger('${a.id}',1)">+</button></div></div>`}).join("")
+    :`<div class="empty">Aucun article. Ajoute tes bobines, résines et hameçons avec un seuil d'alerte.</div>`}</div>
+  ${l.length?`<p class="sub">${lk?"Les boutons + et − sont verrouillés : touche le cadenas pour les activer. ":""}+ et − ajoutent ou retirent un conditionnement entier (une bobine, un sachet…). Pour une quantité précise, ouvre l'article.</p>`:""}`;
 }
+const ICO_LOCK='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+const ICO_OPEN='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
+let stockVerrou=true,verrouTimer=null;
+function basculerVerrou(){stockVerrou=!stockVerrou;clearTimeout(verrouTimer);
+  if(!stockVerrou)verrouTimer=setTimeout(()=>{stockVerrou=true;if(view==="stock")render();toast("Stock reverrouillé")},120000);
+  render();}
 
+let leurresVue="fiches";
 function vLeurres(){
+  const seg=`<div class="seg" role="group" aria-label="Affichage"><button aria-pressed="${leurresVue==="fiches"}" onclick="leurresVue='fiches';render()">Fiches</button><button aria-pressed="${leurresVue==="histo"}" onclick="leurresVue='histo';render()">Historique de fabrication</button></div>`;
+  if(leurresVue==="histo"){
+    const h=[...S.fabrications].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    const tot=h.reduce((s,f)=>s+(Number(f.n)||0),0);
+    return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+seg+`<div class="list">${
+      h.length?h.slice(0,200).map(f=>`<div class="row"><div class="grow"><h3>${esc(f.nom)} <span class="pill">${esc(f.version||"")}</span> × ${f.n}</h3>
+        <div class="sub">${new Date(f.date).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"})}, ${(f.conso||[]).map(c=>fmt(c.qte)+" "+esc(c.unite)+" "+esc(c.nom)).join(", ")}</div></div>
+        <div style="text-align:right"><div class="num">${eur(f.cout)}</div><button class="btn ghost sm" style="margin-top:.3rem" onclick="annulerFab('${f.id}')">Annuler</button></div></div>`).join("")
+      :`<div class="empty">Aucune fabrication. Ouvre une fiche leurre et clique sur Fabriquer : le stock est déduit et la fabrication apparaît ici.</div>`}</div>
+      ${h.length?`<p class="sub">${tot} leurre${tot>1?"s":""} fabriqué${tot>1?"s":""} au total. « Annuler » remet les composants en stock et supprime la ligne.</p>`:""}`;
+  }
   const l=[...S.leurres].sort((a,b)=>(a.nom+a.version).localeCompare(b.nom+b.version));
-  return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+`<div class="list">${
-    l.length?l.map(x=>{const f=fabricables(x);return`<div class="row click" onclick="editLeurre('${x.id}')"><div class="grow"><h3>${esc(x.nom)} <span class="pill">${esc(x.version||"V1")}</span></h3><div class="sub">${[x.corps,x.longueur&&x.longueur+" mm",x.poids&&x.poids+" g",x.nage].filter(Boolean).map(esc).join(" · ")||"Caractéristiques à compléter"}${nbMed(x)}</div></div><div style="text-align:right"><div class="num">${eur(coutLeurre(x))}</div><div class="sub">${f} fabricable${f>1?"s":""}</div></div></div>`}).join("")
+  return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+seg+`<div class="list">${
+    l.length?l.map(x=>{const f=fabricables(x),nf=S.fabrications.filter(z=>z.leurreId===x.id).reduce((s,z)=>s+(Number(z.n)||0),0);return`<div class="row click" onclick="editLeurre('${x.id}')"><div class="grow"><h3>${esc(x.nom)} <span class="pill">${esc(x.version||"V1")}</span></h3><div class="sub">${[x.corps,x.longueur&&x.longueur+" mm",x.poids&&x.poids+" g",x.nage].filter(Boolean).map(esc).join(" · ")||"Caractéristiques à compléter"}${nf?" · fabriqué "+nf+" fois":""}${nbMed(x)}</div></div><div style="text-align:right"><div class="num">${eur(coutLeurre(x))}</div><div class="sub">${f} fabricable${f>1?"s":""}</div></div></div>`}).join("")
     :`<div class="empty">Aucune fiche. Crée un modèle, liste ses composants, et le coût de revient se calcule depuis ton stock.</div>`}</div>`;
+}
+async function annulerFab(id){
+  const f=S.fabrications.find(x=>x.id===id);if(!f)return;
+  if(!confirm(`Annuler la fabrication de ${f.n} × ${f.nom} ? Les composants seront remis en stock.`))return;
+  const deltas=(f.conso||[]).filter(c=>art(c.articleId)).map(c=>[c.articleId,Number(c.qte)||0]);
+  try{await store.annulerFab(deltas,id);toast("Fabrication annulée, stock remis")}catch(e){toast("Échec ("+(e.code||"erreur")+")")}
 }
 function filters(opts){return`<div class="filters">${["tous",...opts].map(o=>`<button aria-pressed="${filtre===o}" onclick="filtre='${o}';render()">${o==="tous"?"Tous":o}</button>`).join("")}</div>`}
 
 /* ---------- Actions ---------- */
-document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";refSel=null;render();scrollTo(0,0)});
-function toast(t){const e=$("#toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),2200)}
-function bouger(id,d){const a=art(id);if(!a)return;if(d<0&&(Number(a.qte)||0)+d<0){toast("Stock déjà à zéro");return}
-  store.inc("articles",id,d).catch(e=>toast("Échec : "+(e.code||"erreur")))}
+document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";refSel=null;stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
+function toast(t,action){const e=$("#toast");e.textContent=t;e.classList.toggle("act",!!action);
+  if(action){const b=document.createElement("button");b.textContent=action.label;b.onclick=()=>{e.classList.remove("show","act");clearTimeout(e._t);action.fn()};e.appendChild(b)}
+  e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show","act"),action?6000:2200)}
+const dernierAppui={};
+function bouger(id,sens){if(stockVerrou){toast("Déverrouille d'abord avec le cadenas");return}const a=art(id);if(!a)return;
+  const t=Date.now();if(t-(dernierAppui[id]||0)<800)return;dernierAppui[id]=t;
+  const L=lotQ(a),q=Number(a.qte)||0,c=cfg(a);
+  let d=sens*L;if(sens<0){if(q<=0){toast("Stock déjà à zéro");return}if(q<L)d=-q}
+  store.inc("articles",id,d).then(()=>toast((d>0?"+ ":"− ")+fmt(Math.abs(d))+" "+a.unite+" "+nomArt(a),{label:"Annuler",fn:()=>store.inc("articles",id,-d).then(()=>toast("Annulé")).catch(e=>toast("Échec : "+(e.code||"erreur")))}))
+    .catch(e=>toast("Échec : "+(e.code||"erreur")))}
 function cocher(pid,tid){const p=S.projets.find(x=>x.id===pid);if(!p)return;
   upd("projets",pid,{taches:p.taches.map(t=>t.id===tid?{...t,fait:true}:t)});toast("Tâche terminée")}
 
@@ -328,24 +394,57 @@ function wire(c,id,build){
     if(!id){await save(c,{...o,medias:[]});toast("Enregistré");return}
     const diff={};Object.keys(o).forEach(k=>{if(k!=="id"&&JSON.stringify(o[k])!==JSON.stringify(orig0[k]))diff[k]=o[k]});
     if(Object.keys(diff).length){await upd(c,id,diff);toast("Enregistré")}else toast("Aucune modification")};
-  if(id)$("#del").onclick=async()=>{if(confirm("Supprimer définitivement ?")){dlg.close();await remove(c,id);toast("Supprimé")}};
+  if(id)$("#del").onclick=async()=>{
+    let msg="Supprimer définitivement ? Cette action est irréversible.";
+    if(c==="articles"){const us=S.leurres.filter(l=>(l.bom||[]).some(b=>b.articleId===id));if(us.length)msg=`Cet article est utilisé dans ${us.length} fiche${us.length>1?"s":""} leurre (${us.map(l=>l.nom).join(", ")}). Le supprimer cassera leur nomenclature et leur coût. Supprimer quand même ?`}
+    if(confirm(msg)){dlg.close();await remove(c,id);toast("Supprimé")}};
 }
 
 function editArticle(id){
-  const a=S.articles.find(x=>x.id===id)||{qte:0,seuil:0,unite:"pcs",categorie:"Autre"};
+  const a=S.articles.find(x=>x.id===id)||{qte:0,seuil:0,categorie:filtre!=="tous"&&CATCFG[filtre]?filtre:"Filament"};
   body.innerHTML=`<h2>${id?"Modifier l'article":"Nouvel article"}</h2>
-  <label>Nom<input id="f_nom" value="${esc(a.nom)}" placeholder="ASA noir 1 kg"></label>
-  <div class="grid2"><label>Catégorie<select id="f_cat">${opt(CATS,a.categorie)}</select></label>
-  <label>Unité<input id="f_unite" value="${esc(a.unite)}" placeholder="g, ml, pcs"></label>
-  <label>Quantité<input id="f_qte" type="number" step="any" value="${a.qte}"></label>
-  <label>Seuil d'alerte<input id="f_seuil" type="number" step="any" value="${a.seuil}"></label>
-  <label>Prix unitaire (€)<input id="f_prix" type="number" step="any" value="${a.prix??""}"></label>
-  <label>Emplacement<input id="f_emp" value="${esc(a.emplacement)}" placeholder="Bac 3"></label></div>
-  <label>Fournisseur<input id="f_four" value="${esc(a.fournisseur)}"></label>
-  <label>Notes<textarea id="f_notes">${esc(a.notes)}</textarea></label>`+actions("articles",id);
-  wire("articles",id,()=>{if(!val("f_nom")){toast("Donne un nom à l'article");return}
-    return{id:a.id||uid(),nom:val("f_nom"),categorie:val("f_cat"),unite:val("f_unite")||"pcs",qte:num("f_qte"),seuil:num("f_seuil"),prix:num("f_prix"),emplacement:val("f_emp"),fournisseur:val("f_four"),notes:val("f_notes")}});
+  <label>Catégorie<select id="f_cat" onchange="formArticle()">${opt(CATS,a.categorie)}</select></label>
+  <div id="artForm"></div>`+actions("articles",id);
+  window._art=a;formArticle(true);
+  wire("articles",id,()=>{
+    const cat=val("f_cat"),fil=cat==="Filament";
+    const nom=val("f_nom")||(fil?[val("f_mat"),val("f_coul")].filter(Boolean).join(" "):"");
+    if(!nom){toast("Donne un nom à l'article");return}
+    if(!(num("f_lot")>0)){toast("Indique la quantité d'un conditionnement");return}
+    return{id:a.id||uid(),nom,categorie:cat,matiere:fil?val("f_mat"):"",couleur:fil?val("f_coul"):"",teinte:fil&&$("#f_teinte").dataset.set==="1"?$("#f_teinte").value:"",
+      unite:val("f_unite"),lotQte:num("f_lot"),prixLot:num("f_plot"),prix:0,qte:num("f_qte"),seuil:num("f_seuil"),fournisseur:val("f_four"),notes:val("f_notes")}});
   dlg.showModal();
+}
+function formArticle(init){
+  const prev=init?window._art:{...window._art,nom:$("#f_nom")?.value,matiere:$("#f_mat")?.value,couleur:$("#f_coul")?.value,qte:$("#f_qte")?.value,seuil:$("#f_seuil")?.value,prixLot:$("#f_plot")?.value,fournisseur:$("#f_four")?.value,notes:$("#f_notes")?.value,teinte:$("#f_teinte")?.dataset.set==="1"?$("#f_teinte").value:window._art.teinte};
+  const cat=$("#f_cat").value,c=CATCFG[cat],fil=cat==="Filament";
+  const memeCat=init||prev.categorie===cat;
+  const unite=memeCat&&c.unites.includes(prev.unite)?prev.unite:c.unites[0];
+  const lot=memeCat&&Number(prev.lotQte)>0?prev.lotQte:c.lot;
+  window._art={...prev,categorie:cat};
+  $("#artForm").innerHTML=`
+  ${fil?`<div class="grid2"><label>Matière<select id="f_mat">${opt(FILAMENTS,prev.matiere||"PLA")}</select></label>
+  <label>Couleur<span style="display:flex;gap:.4rem"><input id="f_coul" value="${esc(prev.couleur)}" placeholder="Noir" style="flex:1"><input id="f_teinte" type="color" value="${esc(prev.teinte||"#888888")}" data-set="${prev.teinte?1:0}" oninput="this.dataset.set=1" style="width:3rem;padding:.15rem" aria-label="Teinte"></span></label></div>`:""}
+  <label>Nom${fil?" (facultatif)":""}<input id="f_nom" value="${esc(prev.nom)}" placeholder="${fil?"Auto : matière + couleur":"Ex. Anneau brisé 150 lb"}"></label>
+  <div class="grid2">
+  <label>Unité de stock<select id="f_unite" onchange="majArtCalc()">${opt(c.unites,unite)}</select></label>
+  <label><span>1 ${c.lotNom} = (<span class="u">${esc(unite)}</span>)</span><input id="f_lot" type="number" step="any" min="0" value="${lot}" oninput="majArtCalc()"></label>
+  <label>Prix d'un${c.fem?"e":""} ${c.lotNom} (€)<input id="f_plot" type="number" step="any" min="0" value="${prev.prixLot??""}" oninput="majArtCalc()"></label>
+  <label>Prix unitaire (calculé)<input id="f_pu" disabled></label>
+  <label><span>En stock (<span class="u">${esc(unite)}</span>)</span><input id="f_qte" type="number" step="any" min="0" value="${prev.qte??0}" oninput="majArtCalc()"></label>
+  <label><span>Seuil d'alerte (<span class="u">${esc(unite)}</span>)</span><input id="f_seuil" type="number" step="any" min="0" value="${prev.seuil??0}"></label>
+  </div>
+  <p class="sub" id="f_eq" style="margin:0"></p>
+  ${Number(prev.prix)>0&&!(Number(prev.prixLot)>0)?`<p class="sub" style="margin:0;color:var(--alert)">Ancien prix unitaire enregistré : ${eur(prev.prix)}/${esc(prev.unite)}. Renseigne le prix d'achat pour le remplacer.</p>`:""}
+  <label>Fournisseur<input id="f_four" value="${esc(prev.fournisseur)}"></label>
+  <label>Notes<textarea id="f_notes">${esc(prev.notes)}</textarea></label>`;
+  majArtCalc();
+}
+function majArtCalc(){
+  const c=CATCFG[$("#f_cat").value],u=$("#f_unite").value,L=num("f_lot"),P=num("f_plot"),Q=num("f_qte");
+  document.querySelectorAll("#artForm .u").forEach(e=>e.textContent=u);
+  $("#f_pu").value=L>0&&P>0?(P/L).toLocaleString("fr-FR",{maximumFractionDigits:4})+" €/"+u:"—";
+  $("#f_eq").textContent=L>0?`Soit ${fmt(Q/L)} ${Q/L>1?c.lotsNom:c.lotNom} en stock${P>0?", valeur "+eur(Q*P/L):""}.`:"";
 }
 
 let tmpTaches=[];
@@ -379,36 +478,49 @@ function editLeurre(id){
   body.innerHTML=`<h2>${id?"Fiche leurre":"Nouvelle fiche leurre"}</h2>
   <div class="grid2"><label>Modèle<input id="f_nom" value="${esc(l.nom)}" placeholder="Stickbait thon"></label>
   <label>Version<input id="f_ver" value="${esc(l.version)}"></label>
-  <label>Corps (matière)<input id="f_corps" value="${esc(l.corps)}" placeholder="ASA, PETG…"></label>
+  <label>Corps (matière)<select id="f_corps"><option value="">Choisir</option>${opt(MATIERES_CORPS.includes(l.corps)||!l.corps?MATIERES_CORPS:[...MATIERES_CORPS,l.corps],l.corps)}</select></label>
   <label>Type de nage<input id="f_nage" value="${esc(l.nage)}" placeholder="Wobbling, glissé…"></label>
   <label>Longueur (mm)<input id="f_long" type="number" value="${l.longueur??""}"></label>
   <label>Poids (g)<input id="f_poids" type="number" step="any" value="${l.poids??""}"></label></div>
-  <div><h3 style="margin-bottom:.4rem">Nomenclature (par leurre)</h3><div id="bom" style="display:flex;flex-direction:column;gap:.4rem"></div>
-  <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpBom.push({articleId:'',qte:1});drawBom()">Ajouter un composant</button>
+  <div><h3 style="margin-bottom:.4rem">Nomenclature (pour 1 leurre)</h3><div id="bom" style="display:flex;flex-direction:column;gap:.4rem"></div>
+  <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpBom.push({cat:'',articleId:'',qte:''});drawBom()">Ajouter un composant</button>
   <p class="sub" id="cout" style="margin:.5rem 0 0"></p></div>
   <label>Essais et observations<textarea id="f_notes" placeholder="Nage à 6 nœuds, profondeur, captures…">${esc(l.notes)}</textarea></label>
   ${mediaBlock()}
-  ${id?`<button class="btn ghost" id="fab">Fabriquer 1 (déduit le stock)</button>`:""}`+actions("leurres",id);
+  ${id?`<div style="border-top:1px solid var(--line);padding-top:.8rem"><h3 style="margin-bottom:.4rem">Fabrication</h3>
+    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><label style="flex-direction:row;align-items:center;gap:.4rem;color:var(--ink)">Quantité<input id="f_nfab" type="number" min="1" step="1" value="1" style="width:5rem"></label><button class="btn ghost" id="fab">Fabriquer (déduit le stock)</button></div>
+    <p class="sub" style="margin:.4rem 0 0">${(()=>{const fs=S.fabrications.filter(z=>z.leurreId===id),n=fs.reduce((s,z)=>s+(Number(z.n)||0),0);return n?`Déjà fabriqué ${n} fois, dernière le ${new Date(fs.map(z=>z.date).sort().pop()).toLocaleDateString("fr-FR")}.`:"Jamais fabriqué."})()}</p></div>`:""}`+actions("leurres",id);
   drawBom();drawMedia("leurres",id);
   wire("leurres",id,()=>{if(!val("f_nom")){toast("Donne un nom au modèle");return}
     return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:Number(b.qte)||0}))}});
   if(id)$("#fab").onclick=async()=>{
-    const manque=(l.bom||[]).filter(b=>(Number(art(b.articleId)?.qte)||0)<Number(b.qte));
-    if(manque.length){toast("Stock insuffisant : "+manque.map(b=>art(b.articleId)?.nom||"?").join(", "));return}
+    const n=Math.max(1,Math.round(num("f_nfab")||1)),bom=(l.bom||[]).filter(b=>b.articleId&&Number(b.qte)>0);
+    if(!bom.length){toast("Ajoute d'abord des composants à la nomenclature, puis enregistre");return}
+    const tot={};bom.forEach(b=>tot[b.articleId]=(tot[b.articleId]||0)+Number(b.qte)*n);
+    const absents=Object.keys(tot).filter(i=>!art(i));if(absents.length){toast("Un composant a été supprimé du stock : corrige la nomenclature");return}
+    const manque=Object.keys(tot).filter(i=>(Number(art(i).qte)||0)<tot[i]);
+    if(manque.length){toast("Stock insuffisant : "+manque.map(i=>nomArt(art(i))).join(", "));return}
+    const fab={id:uid(),date:new Date().toISOString(),leurreId:l.id,nom:l.nom,version:l.version||"",n,cout:Math.round(coutLeurre(l)*n*100)/100,
+      conso:Object.keys(tot).map(i=>({articleId:i,nom:nomArt(art(i)),qte:Math.round(tot[i]*1000)/1000,unite:art(i).unite||""}))};
     dlg.close();
-    try{await store.batchInc("articles",l.bom.map(b=>[b.articleId,-Number(b.qte)]));toast("Stock déduit pour 1 "+l.nom)}
+    try{await store.fabriquer(Object.entries(tot).map(([i,q])=>[i,-q]),fab);toast(n+" × "+l.nom+" fabriqué"+(n>1?"s":"")+", stock déduit")}
     catch(e){toast("Échec, stock inchangé ("+(e.code||"erreur")+")")}
   };
   dlg.showModal();
 }
 function drawBom(){
-  const opts=id=>`<option value="">Choisir un article</option>`+S.articles.map(a=>`<option value="${a.id}" ${a.id===id?"selected":""}>${esc(a.nom)} (${esc(a.unite)})</option>`).join("");
-  $("#bom").innerHTML=S.articles.length?tmpBom.map((b,i)=>`<div class="bomline"><select onchange="tmpBom[${i}].articleId=this.value;majCout()" aria-label="Article">${opts(b.articleId)}</select><input type="number" step="any" value="${b.qte}" oninput="tmpBom[${i}].qte=this.value;majCout()" aria-label="Quantité"><button class="x" aria-label="Retirer" onclick="tmpBom.splice(${i},1);drawBom()">×</button></div>`).join(""):`<p class="sub">Crée d'abord tes articles dans le Stock.</p>`;
+  if(!S.articles.length){$("#bom").innerHTML=`<p class="sub">Crée d'abord tes articles dans le Stock.</p>`;majCout();return}
+  tmpBom.forEach(b=>{if(!b.cat&&b.articleId)b.cat=art(b.articleId)?.categorie||""});
+  const cats=CATS.filter(c=>S.articles.some(a=>a.categorie===c));
+  $("#bom").innerHTML=tmpBom.map((b,i)=>{const a=art(b.articleId),liste=S.articles.filter(x=>x.categorie===b.cat).sort((x,y)=>nomArt(x).localeCompare(nomArt(y)));
+    return`<div class="bomline" style="flex-wrap:wrap">
+    <select style="flex:1 1 7.5rem" aria-label="Domaine" onchange="tmpBom[${i}].cat=this.value;tmpBom[${i}].articleId='';drawBom()"><option value="">Domaine</option>${cats.map(c=>`<option ${c===b.cat?"selected":""}>${esc(c)}</option>`).join("")}</select>
+    <select style="flex:2 1 10rem" aria-label="Article" ${b.cat?"":"disabled"} onchange="tmpBom[${i}].articleId=this.value;drawBom()"><option value="">${b.cat?"Choisir un article":"Choisis d'abord le domaine"}</option>${liste.map(x=>`<option value="${x.id}" ${x.id===b.articleId?"selected":""}>${esc(nomArt(x))}</option>`).join("")}</select>
+    <span style="display:flex;align-items:center;gap:.3rem"><input type="number" step="any" min="0" value="${esc(b.qte)}" placeholder="Qté" oninput="tmpBom[${i}].qte=this.value;majCout()" aria-label="Quantité" style="width:5.5rem"><span class="sub" style="min-width:2rem">${esc(a?.unite||"")}</span></span>
+    <button class="x" aria-label="Retirer" onclick="tmpBom.splice(${i},1);drawBom()">×</button></div>`}).join("");
   majCout();
 }
 function majCout(){$("#cout").textContent="Coût de revient : "+eur(coutLeurre({bom:tmpBom}))}
-
-
 
 /* ---------- Références : tableaux libres ---------- */
 const MODELES=[
@@ -426,10 +538,12 @@ const MODELES=[
   notes:"Sources : fiches produit GT Fight Club (BF100-200, BF140-225) et Pêchextrême (BF75-180)."}
 ];
 function vRefs(){
-  if(refSel==="especes")return vEspeces();
+  if(refSel==="especes"||refSel==="especes-fr")return vEspeces("fr");
+  if(refSel==="especes-nc")return vEspeces("nc");
   if(refSel){const r=S.refs.find(x=>x.id===refSel);if(r)return `<button class="back" onclick="refSel=null;render()">‹ Références</button>`+refCard(r);refSel=null}
   const q=(window._rq||"").toLowerCase();
-  const items=[{id:"especes",titre:"Proies et prédateurs (France)",categorie:"Pêche",description:"Ce que mange chaque espèce, en mer et en eau douce, avec photos et robe des poissons fourrage.",n:ESP.length+" espèces"},
+  const items=[{id:"especes-fr",titre:"Proies et prédateurs (France)",categorie:"Pêche",description:"Ce que mange chaque espèce, en mer et en eau douce, avec photos et robe des poissons fourrage.",n:ESP.filter(e=>zoneDe(e)==="fr").length+" espèces"},
+    {id:"especes-nc",titre:"Proies et prédateurs (Nouvelle-Calédonie)",categorie:"Pêche",description:"Lagon, récif et large : ce que mangent carangues, thazards, thons, wahoos et marlins.",n:ESP.filter(e=>zoneDe(e)==="nc").length+" espèces"},
     ...S.refs.map(r=>({id:r.id,titre:r.titre,categorie:r.categorie||"Divers",description:r.description||"",n:(r.lignes||[]).length+" ligne"+((r.lignes||[]).length>1?"s":"")}))]
     .filter(r=>!q||(r.titre+" "+r.categorie+" "+r.description).toLowerCase().includes(q));
   const cats=[...new Set(items.map(i=>i.categorie))].sort((a,b)=>a.localeCompare(b));
@@ -446,33 +560,40 @@ function ouvrirRef(id){refSel=id;render();scrollTo(0,0)}
 const ESP=window.ESPECES||[];
 const espById=id=>ESP.find(e=>e.id===id);
 const mangePar=id=>ESP.filter(e=>(e.mange||[]).includes(id));
-let milieu="mer";
-function vEspeces(){
-  const L=ESP.filter(e=>e.milieu===milieu);
+const zoneDe=e=>e.zone||"fr";
+const ZONES={fr:{titre:"Proies et prédateurs (France)",milieux:[["mer","Mer"],["douce","Eau douce"]]},nc:{titre:"Proies et prédateurs (Nouvelle-Calédonie)",milieux:[["lagon","Lagon et récif"],["large","Large"]]}};
+const NOM_MILIEU={mer:"Mer",douce:"Eau douce",lagon:"Lagon et récif",large:"Large"};
+let milieux={fr:"mer",nc:"lagon"};
+function vEspeces(zone){
+  const Z=ZONES[zone],milieu=milieux[zone];
+  const L=ESP.filter(e=>zoneDe(e)===zone&&e.milieu===milieu);
   const preds=L.filter(e=>e.roles.includes("predateur")),proies=L.filter(e=>e.roles.includes("proie"));
   const chips=ids=>`<div class="chips">${ids.map(id=>{const e=espById(id);return e?`<button type="button" onclick="event.stopPropagation();ficheEsp('${e.id}')">${esc(e.nom)}</button>`:""}).join("")}</div>`;
-  const card=(e,mode)=>`<article class="sp"><button type="button" class="ph" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}" onclick="ficheEsp('${e.id}')" aria-label="Fiche ${esc(e.nom)}">${esc(e.nom)}</button>
+  const card=(e,mode)=>`<article class="sp"><button type="button" class="ph" data-id="${e.id}" data-nom="${esc(e.nom)}" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}" onclick="ficheEsp('${e.id}')" aria-label="Fiche ${esc(e.nom)}">${esc(e.nom)}</button>
     <div class="bd"><h3 onclick="ficheEsp('${e.id}')">${esc(e.nom)}</h3><div class="sci">${esc(e.sci)}, ${esc(e.taille)}</div>
     ${mode==="pred"?((e.mange||[]).length?`<span class="lbl">Mange</span>${chips(e.mange)}`:`<span class="lbl">Mange</span><div class="sub">${esc(e.autres)}</div>`)
       :(mangePar(e.id).length?`<span class="lbl">Mangé par</span>${chips(mangePar(e.id).map(x=>x.id))}`:"")}</div></article>`;
   setTimeout(chargerPhotos,0);
-  return `<button class="back" onclick="refSel=null;render()">‹ Références</button>`+head("Proies et prédateurs")+
-  `<div class="seg" role="group" aria-label="Milieu"><button aria-pressed="${milieu==="mer"}" onclick="milieu='mer';render()">Mer</button><button aria-pressed="${milieu==="douce"}" onclick="milieu='douce';render()">Eau douce</button></div>
+  return `<button class="back" onclick="refSel=null;render()">‹ Références</button>`+head(Z.titre)+
+  `<div class="seg" role="group" aria-label="Milieu">${Z.milieux.map(([k,l])=>`<button aria-pressed="${milieu===k}" onclick="milieux['${zone}']='${k}';render()">${l}</button>`).join("")}</div>
   <section><h2 style="margin-bottom:.6rem">Prédateurs</h2><div class="sp-grid">${preds.map(e=>card(e,"pred")).join("")}</div></section>
   <section><h2 style="margin-bottom:.25rem">Poissons fourrage</h2><p class="sub" style="margin:0 0 .75rem">Les petits poissons chassés, avec leur robe : utile pour peindre tes leurres.</p><div class="sp-grid">${proies.map(e=>card(e,"proie")).join("")}</div></section>
-  <p class="sub">Photos et fiches : Wikipédia (Wikimedia Commons). Régimes alimentaires : synthèse des fiches Wikipédia de chaque espèce, à compléter par tes observations.</p>`;
+  <p class="sub">Photos et fiches : Wikipédia (Wikimedia Commons). Régimes alimentaires : synthèse de connaissances générales sur chaque espèce, à compléter par tes observations.</p>`;
 }
 function ficheEsp(id){
   const e=espById(id);if(!e)return;
   const chips=ids=>ids.length?`<div class="chips">${ids.map(i=>{const x=espById(i);return x?`<button type="button" onclick="ficheEsp('${x.id}')">${esc(x.nom)}</button>`:""}).join("")}</div>`:"";
   const par=mangePar(e.id);
   const vb=$("#viewerBody");
-  vb.innerHTML=`<div class="spd" style="display:flex;flex-direction:column;gap:.8rem"><div class="ph" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}">${esc(e.nom)}</div>
+  vb.innerHTML=`<div class="spd" style="display:flex;flex-direction:column;gap:.8rem"><div class="ph" data-id="${e.id}" data-nom="${esc(e.nom)}" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}">Chargement de la photo…</div>
   <div><h2>${esc(e.nom)}</h2><div class="sci">${esc(e.sci)}</div></div>
-  <dl><dt>Taille</dt><dd>${esc(e.taille)}</dd><dt>Milieu</dt><dd>${e.milieu==="mer"?"Mer":"Eau douce"}</dd><dt>Habitat</dt><dd>${esc(e.habitat||"")}</dd>${e.robe?`<dt>Robe</dt><dd>${esc(e.robe)}</dd>`:""}</dl>
+  <dl><dt>Taille</dt><dd>${esc(e.taille)}</dd><dt>Milieu</dt><dd>${zoneDe(e)==="nc"?"Nouvelle-Calédonie, ":""}${NOM_MILIEU[e.milieu]||e.milieu}</dd><dt>Habitat</dt><dd>${esc(e.habitat||"")}</dd>${e.robe?`<dt>Robe</dt><dd>${esc(e.robe)}</dd>`:""}</dl>
   ${e.roles.includes("predateur")?`<div><span class="lbl">Poissons mangés</span>${(e.mange||[]).length?chips(e.mange):`<div class="sub">Peu ou pas de poissons</div>`}${e.autres?`<p style="margin:.4rem 0 0">${esc(e.autres)}</p>`:""}</div>`:""}
   ${par.length?`<div><span class="lbl">Mangé par</span>${chips(par.map(x=>x.id))}</div>`:""}
   ${e.conseil?`<p style="margin:0"><b>Pour tes leurres :</b> ${esc(e.conseil)}</p>`:""}
+  <details><summary class="sub" style="cursor:pointer">Remplacer la photo</summary>
+    <p class="sub" style="margin:.4rem 0">Colle l'adresse d'une image (clic droit sur une photo en ligne > Copier l'adresse de l'image). Laisse vide pour revenir à la photo Wikipédia.</p>
+    <div style="display:flex;gap:.4rem"><input id="ph_url" value="${esc(photoPerso(e.id))}" placeholder="https://…" style="flex:1"><button class="btn ghost sm" onclick="changerPhoto('${e.id}')">Enregistrer</button></div></details>
   <div class="actions"><a class="btn ghost" href="https://fr.wikipedia.org/wiki/${encodeURIComponent(e.wiki)}" target="_blank" rel="noopener">Fiche Wikipédia</a><button class="btn" onclick="viewer.close()">Fermer</button></div></div>`;
   if(!viewer.open)viewer.showModal();
   vb.scrollTop=0;chargerPhotos();
@@ -481,21 +602,39 @@ const PH={};
 function photoCache(k,v){try{if(v===undefined)return JSON.parse(localStorage.getItem("ph:"+k));localStorage.setItem("ph:"+k,JSON.stringify(v))}catch(e){return null}}
 async function photoEsp(sci,wiki){
   if(PH[sci]!==undefined)return PH[sci];
-  const c=photoCache(sci);if(c&&c.t>Date.now()-30*864e5)return PH[sci]=c.u;
-  const essai=async u=>{try{const r=await fetch(u);if(!r.ok)return"";const j=await r.json();return j.thumbnail?.source||j.originalimage?.source||""}catch(e){return""}};
-  PH[sci]=new Promise(async res=>{
-    let u=await essai("https://en.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(sci.replace(/ /g,"_")));
-    if(!u&&wiki)u=await essai("https://fr.wikipedia.org/api/rest_v1/page/summary/"+encodeURIComponent(wiki));
-    photoCache(sci,{u,t:Date.now()});PH[sci]=u;res(u);
-  });
+  const c=photoCache(sci);if(c&&c.u&&c.t>Date.now()-30*864e5)return PH[sci]=c.u;
+  const json=async u=>{try{const r=await fetch(u);return r.ok?await r.json():null}catch(e){return null}};
+  const rest=async (dom,t)=>{const j=await json(`https://${dom}.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(t.replace(/ /g,"_"))}`);return j?.thumbnail?.source||""};
+  const api=async (dom,t)=>{const j=await json(`https://${dom}.wikipedia.org/w/api.php?action=query&prop=pageimages&piprop=thumbnail&pithumbsize=480&redirects=1&format=json&origin=*&titles=${encodeURIComponent(t)}`);const pg=j&&Object.values(j.query?.pages||{})[0];return pg?.thumbnail?.source||""};
+  PH[sci]=(async()=>{
+    let u=await rest("en",sci);
+    if(!u&&wiki)u=await rest("fr",wiki.replace(/_/g," "));
+    if(!u)u=await api("en",sci);
+    if(!u&&wiki)u=await api("fr",wiki.replace(/_/g," "));
+    if(u)photoCache(sci,{u,t:Date.now()});
+    PH[sci]=u||undefined;return u;
+  })();
   return PH[sci];
 }
+const photoPerso=id=>S.photos.find(p=>p.id===id)?.url||"";
 function chargerPhotos(){
   document.querySelectorAll(".ph[data-sci]:not([data-ok])").forEach(async el=>{
     el.setAttribute("data-ok","1");
-    const u=await photoEsp(el.dataset.sci,el.dataset.wiki);
-    if(u&&el.isConnected){const img=new Image();img.alt=el.textContent.trim();img.loading="lazy";img.onload=()=>{el.textContent="";el.appendChild(img)};img.src=u}
+    const perso=photoPerso(el.dataset.id);
+    const u=perso||await photoEsp(el.dataset.sci,el.dataset.wiki);
+    if(!el.isConnected)return;
+    if(!u){el.textContent=el.dataset.nom+" (photo indisponible)";return}
+    const img=new Image();img.alt=el.dataset.nom||"";img.decoding="async";
+    img.onload=()=>{el.textContent="";el.appendChild(img)};
+    img.onerror=()=>{el.textContent=el.dataset.nom+" (photo indisponible)"};
+    img.src=u;
   });
+}
+async function changerPhoto(id){
+  const v=$("#ph_url").value.trim();
+  if(v&&!/^https:\/\//.test(v)){toast("Colle une adresse d'image commençant par https://");return}
+  if(v)await save("photos",{id,url:v});else await remove("photos",id);
+  toast(v?"Photo enregistrée":"Photo d'origine rétablie");setTimeout(()=>ficheEsp(id),300);
 }
 function refCard(r){
   const cols=r.colonnes||[],rows=(r.lignes||[]).map(x=>x.v||[]);
