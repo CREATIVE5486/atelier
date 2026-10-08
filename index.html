@@ -216,6 +216,28 @@ p.sub{color:var(--muted);font-size:.88rem}
 .essai{width:100%;background:none;border:0;border-top:1px solid var(--line);text-align:left;cursor:pointer;grid-template-columns:4.6rem 1fr auto;color:var(--ink)}
 .essai:hover{background:var(--chip)}
 .lien{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}.lien input{flex:1 1 8rem;min-width:0}
+nav .tab .ct{display:none}
+@media (max-width:760px){nav .tab .lg{display:none}nav .tab .ct{display:inline}nav button.tab{font-size:.78rem}}
+table.couts tr.click{cursor:pointer}table.couts tr.click:hover td{background:var(--chip)}
+table.couts td.n svg{vertical-align:-1px}
+.recap{border:1px solid var(--line);border-radius:8px;padding:.3rem .8rem;background:var(--bg)}
+.recap .mv{grid-template-columns:1fr auto}
+.mv-c.st-crit,.mv-q.st-crit,.sub.st-crit{color:var(--crit)}.mv-c.st-ok,.mv-q.st-ok{color:var(--good)}
+.viz{--s1:#2a78d6;--s2:#eb6834;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:.8rem}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .viz{--s1:#3987e5;--s2:#d95926}}
+:root[data-theme="dark"] .viz{--s1:#3987e5;--s2:#d95926}
+.viz .b1{fill:var(--s1)}.viz .b2{fill:var(--s2)}.viz .gl{stroke:var(--line);stroke-width:1}.viz .base{stroke:var(--muted);stroke-width:1}
+.viz .ax{fill:var(--muted);font-size:11px;font-family:Barlow,sans-serif}
+.lgd{display:flex;gap:1rem;font-size:.85rem;margin-bottom:.3rem}.lgd i{display:inline-block;width:.75rem;height:.75rem;border-radius:2px;margin-right:.35rem;vertical-align:-1px;background:var(--s1)}.lgd i.b2{background:var(--s2)}
+.viz path:hover{opacity:.8}
+.pw{display:grid;grid-template-columns:repeat(auto-fill,minmax(6.5rem,1fr));gap:.5rem;margin-top:.3rem}
+.pw label{font-weight:600;color:var(--ink)}.pw small{color:var(--muted);font-weight:400;font-size:.72rem}
+.pts{display:inline-flex;gap:3px}.pts i{width:9px;height:9px;border-radius:50%;background:var(--track);display:inline-block}.pts i.on{background:var(--ink)}
+.fil-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:1rem;margin:1.25rem 0}
+.fil{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:1rem;display:flex;flex-direction:column;gap:.7rem}
+.fil dl{display:grid;grid-template-columns:auto 1fr;gap:.3rem .8rem;margin:0;font-size:.9rem}.fil dt{color:var(--muted);font-weight:600}.fil dd{margin:0}
+.pm{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;font-size:.88rem}.pm ul{margin:.3rem 0 0;padding-left:1.1rem}.pm li{margin-bottom:.2rem}
+@media (max-width:520px){.pm{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
@@ -228,7 +250,8 @@ p.sub{color:var(--muted);font-size:.88rem}
     <button class="tab" data-view="projets">Projets</button>
     <button class="tab" data-view="leurres">Leurres</button>
     <button class="tab" data-view="stock">Stock</button>
-    <button class="tab" data-view="refs">Références</button>
+    <button class="tab" data-view="ventes">Ventes</button>
+    <button class="tab" data-view="refs"><span class="lg">Références</span><span class="ct">Réf.</span></button>
     <div class="sync" id="sync"><b></b><span>Connexion…</span></div>
   </nav>
   <main id="main"></main>
@@ -238,9 +261,10 @@ p.sub{color:var(--muted);font-size:.88rem}
 <div class="toast" id="toast" role="status"></div>
 
 <script src="especes.js"></script>
+<script src="filaments.js"></script>
 <script>
 /* ---------- Données ---------- */
-const COLS=["projets","articles","leurres","refs","fabrications","photos","mouvements","essais","reglages"];
+const COLS=["projets","articles","leurres","refs","fabrications","photos","mouvements","essais","reglages","ventes"];
 const S=Object.fromEntries(COLS.map(c=>[c,[]]));
 let view="accueil", filtre="tous", store=null, refSel=null;
 
@@ -306,8 +330,10 @@ function exporter(){
   document.body.appendChild(a);a.click();a.remove();toast("Sauvegarde téléchargée");
   majReglages({dernierExport:new Date().toISOString()});
 }
-const REG=()=>S.reglages.find(x=>x.id==="general")||{};
-async function majReglages(f){try{await store.save("reglages",{...REG(),...f,id:"general"})}catch(e){}}
+const DEF_REG={kwh:0.2001,watts:175,usure:0.05,tauxHoraire:12.31,emballage:0.8,margeVisee:30,urssaf:12.4,
+  canaux:[{nom:"Main propre",pct:0,fixe:0},{nom:"Leboncoin",pct:0,fixe:0},{nom:"Vinted",pct:0,fixe:0},{nom:"Etsy",pct:11.64,fixe:0.48},{nom:"Site perso",pct:0,fixe:0},{nom:"Salon / marché",pct:0,fixe:0}]};
+const REG=()=>{const r=S.reglages.find(x=>x.id==="general")||{};return{...DEF_REG,...Object.fromEntries(Object.entries(r).filter(([k,v])=>v!==null&&v!==undefined))}};
+async function majReglages(f){const brut=S.reglages.find(x=>x.id==="general")||{};try{await store.save("reglages",{...brut,...f,id:"general"})}catch(e){}}
 function bandeauExport(){
   const d=REG().dernierExport,j=d?Math.floor((Date.now()-new Date(d))/864e5):null;
   if(j!==null&&j<30)return"";
@@ -327,8 +353,9 @@ const CATCFG={
   "Autre":{unites:["pcs","g","ml","cm","m"],lot:1,lotNom:"lot",lotsNom:"lots"}
 };
 const CATS=Object.keys(CATCFG);
-const FILAMENTS=["PLA","PETG","ABS","ASA","TPU"];
-const MATIERES_CORPS=["ASA","PETG","PLA","ABS","TPU","Résine","Bois","Autre"];
+const FIL=window.FILAMENTS_DATA||[];const filById=m=>FIL.find(f=>f.id===m);
+const FILAMENTS=FIL.length?FIL.map(f=>f.id):["PLA","PETG","ABS","ASA","TPU"];
+const MATIERES_CORPS=["ASA","PETG","PLA","ABS","PC","TPU","PA-CF","Résine","Bois","Autre"];
 const cfg=a=>CATCFG[a?.categorie]||CATCFG.Autre;
 const fmt=(n,d=2)=>(Number(n)||0).toLocaleString("fr-FR",{maximumFractionDigits:d});
 const art=id=>S.articles.find(a=>a.id===id);
@@ -337,8 +364,28 @@ const pu=a=>!a?0:(Number(a.prixLot)>0&&lotQ(a)>0?Number(a.prixLot)/lotQ(a):(Numb
 const nomArt=a=>a?(a.nom||[a.matiere,a.couleur].filter(Boolean).join(" ")||"Sans nom"):"Article supprimé";
 const enLots=a=>{const n=(Number(a.qte)||0)/lotQ(a),c=cfg(a);return fmt(n)+" "+(n>1?c.lotsNom:c.lotNom)};
 const coutMat=l=>(l.bom||[]).reduce((s,b)=>s+pu(art(b.articleId))*pnum(b.qte),0);
-const coutImp=l=>{const h=pnum(l.impH),r=REG();if(!(h>0))return 0;const kwh=r.kwh??0.25,w=r.watts??300,us=r.usure??0;return h*(w/1000)*kwh+h*us};
-const coutLeurre=l=>coutMat(l)+coutImp(l);
+const matiereImp=l=>{const b=(l.bom||[]).map(x=>art(x.articleId)).find(a=>a?.categorie==="Filament");return b?.matiere||(FILAMENTS.includes(l.corps)?l.corps:"")};
+const wattsMat=m=>{const r=REG();return Number(r.wattsMat?.[m])||filById(m)?.watts||r.watts};
+const coutImp=l=>{const h=pnum(l.impH),r=REG();if(!(h>0))return 0;return h*(wattsMat(matiereImp(l))/1000)*r.kwh+h*r.usure};
+const coutMO=l=>pnum(l.moH)*(REG().tauxHoraire??0);
+const coutEmb=()=>REG().emballage??0;
+const coutLeurre=l=>coutMat(l)+coutImp(l)+coutMO(l)+coutEmb();
+const CANAUX_DEF=[{nom:"Main propre",pct:0,fixe:0},{nom:"Leboncoin",pct:0,fixe:0},{nom:"Vinted",pct:0,fixe:0},{nom:"Etsy",pct:0,fixe:0},{nom:"Site perso",pct:0,fixe:0},{nom:"Salon / marché",pct:0,fixe:0}];
+const canaux=()=>REG().canaux?.length?REG().canaux:DEF_REG.canaux;
+const canal=n=>canaux().find(c=>c.nom===n)||{nom:n,pct:0,fixe:0};
+function couts(l,canalNom){
+  const r=REG(),mat=coutMat(l),imp=coutImp(l),mo=coutMO(l),emb=coutEmb(),total=mat+imp+mo+emb;
+  const urs=(r.urssaf??0)/100,mv=(r.margeVisee??30)/100,c=canal(canalNom||"Main propre");
+  const pv=Number(l.prixVente)||0;
+  const frais=p=>p*(c.pct/100)+c.fixe+p*urs;
+  const margeMP=pv?pv-frais(pv)-total:0;
+  const den=1-c.pct/100-urs-mv,conseille=den>0?(total+c.fixe)/den:0;
+  return{mat,imp,mo,emb,total,margeMP,tauxMP:pv?margeMP/pv*100:0,conseille:Math.ceil(conseille*2)/2,frais:pv?frais(pv):0}
+}
+const fabTot=id=>S.fabrications.filter(f=>f.leurreId===id).reduce((s,f)=>s+(Number(f.n)||0),0);
+const venduTot=id=>S.ventes.filter(v=>v.leurreId===id).reduce((s,v)=>s+(Number(v.qte)||0),0);
+const dispo=id=>fabTot(id)-venduTot(id);
+const coutUnitFab=l=>coutLeurre(l);
 const stockBas=()=>S.articles.filter(a=>Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil));
 const fabricables=l=>{const r=(l.bom||[]).filter(b=>Number(b.qte)>0).map(b=>Math.floor((Number(art(b.articleId)?.qte)||0)/Number(b.qte)));return r.length?Math.min(...r):0};
 const dot=a=>a?.teinte?`<span aria-hidden="true" style="display:inline-block;width:.8rem;height:.8rem;border-radius:50%;background:${esc(a.teinte)};border:1px solid var(--line);vertical-align:-1px;margin-right:.35rem"></span>`:"";
@@ -348,7 +395,7 @@ const avancement=p=>{const t=p.taches||[];return t.length?Math.round(100*t.filte
 function render(){
   document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.view===view?"page":"false"));
   document.querySelector("nav.side").hidden=["login","config","erreur","chargement"].includes(view);
-  $("#main").innerHTML=({accueil:vAccueil,projets:vProjets,leurres:vLeurres,stock:vStock,refs:vRefs,login:vLogin,config:vConfig,erreur:vErreur,chargement:()=>`<p class="sub">Chargement…</p>`})[view]();
+  $("#main").innerHTML=({accueil:vAccueil,projets:vProjets,leurres:vLeurres,stock:vStock,refs:vRefs,ventes:vVentes,login:vLogin,config:vConfig,erreur:vErreur,chargement:()=>`<p class="sub">Chargement…</p>`})[view]();
 }
 const head=(t,btn)=>`<div class="head"><div><h1>${t}</h1><div class="mob-sync" id="mobSync">${esc($("#sync span")?.textContent||"")}</div></div>${btn||""}</div>`;
 
@@ -364,6 +411,7 @@ function vAccueil(){
     <div class="kpi ${bas.length?"warn":""}"><strong>${bas.length}</strong><span>articles sous le seuil</span></div>
     <div class="kpi"><strong class="num">${eur(valeur)}</strong><span>valeur du stock</span></div>
     <div class="kpi"><strong>${fabMois}</strong><span>leurres fabriqués ce mois</span></div>
+    ${(()=>{const n=S.ventes.filter(v=>!v.payee||(!v.expediee&&v.livraison!=="main")).length;return n?`<div class="kpi warn" style="cursor:pointer" onclick="view='ventes';ventesOnglet='ventes';render()"><strong>${n}</strong><span>ventes à traiter</span></div>`:""})()}
   </div>
   <section class="block"><h2>À réapprovisionner</h2><div class="list">${
     bas.length?bas.map(a=>`<div class="row click" onclick="editArticle('${a.id}')"><div class="grow">${dot(a)}${esc(nomArt(a))}<div class="sub">${esc(a.fournisseur||"Fournisseur non renseigné")}</div></div><span class="num pill alert">${fmt(a.qte)} / ${fmt(a.seuil)} ${esc(a.unite)}</span></div>`).join("")
@@ -506,7 +554,7 @@ async function annulerFab(id){
 function filters(opts){return`<div class="filters">${["tous",...opts].map(o=>`<button aria-pressed="${filtre===o}" onclick="filtre='${o}';render()">${o==="tous"?"Tous":o}</button>`).join("")}</div>`}
 
 /* ---------- Actions ---------- */
-document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";refSel=null;stockQ="";stockOnglet="articles";stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
+document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";ventesFiltre="toutes";refSel=null;stockQ="";stockOnglet="articles";stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
 function toast(t,action){const e=$("#toast");e.textContent=t;e.classList.toggle("act",!!action);
   if(action){const b=document.createElement("button");b.textContent=action.label;b.onclick=()=>{e.classList.remove("show","act");clearTimeout(e._t);action.fn()};e.appendChild(b)}
   e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show","act"),action?6000:2200)}
@@ -672,13 +720,16 @@ function editLeurre(id){
   <label>Corps (matière)<select id="f_corps"><option value="">Choisir</option>${opt(MATIERES_CORPS.includes(l.corps)||!l.corps?MATIERES_CORPS:[...MATIERES_CORPS,l.corps],l.corps)}</select></label>
   <label>Type de nage<input id="f_nage" value="${esc(l.nage)}" placeholder="Wobbling, glissé…"></label>
   <label>Longueur (mm)<input id="f_long" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.longueur??"")}"></label>
-  <label>Poids (g)<input id="f_poids" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.poids??"")}"></label></div>
+  <label>Poids (g)<input id="f_poids" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.poids??"")}"></label>
+  <label>Main d'œuvre par leurre (h)<input id="f_moh" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.moH??"")}" placeholder="Ponçage, peinture, résine, montage" oninput="majCout()"></label>
+  <label>Prix de vente (€)<input id="f_pv" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.prixVente??"")}" oninput="majCout()"></label></div>
   <div><h3 style="margin-bottom:.4rem">Nomenclature (pour 1 leurre)</h3><div id="bom" style="display:flex;flex-direction:column;gap:.4rem"></div>
   <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpBom.push({cat:'',articleId:'',qte:''});drawBom()">Ajouter un composant</button>
   <p class="sub" id="cout" style="margin:.5rem 0 0"></p></div>
   <div class="bloc-in"><h3 style="margin-bottom:.4rem">Impression 3D</h3>
     <div class="grid2"><label>Temps d'impression (h)<input id="f_imph" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.impH??"")}" placeholder="Ex. 3,5 ou 3h30" oninput="majCout()"></label>
     <label>Importer depuis le slicer<span class="btn ghost sm" style="text-align:center;cursor:pointer;position:relative">Choisir un fichier G-code<input type="file" accept=".gcode,.gco,.g,.bgcode" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="importerGcode(this.files[0])"></span></label></div>
+    <p class="sub" id="profil" style="margin:.4rem 0 0"></p>
     <p class="sub" id="gcinfo" style="margin:.4rem 0 0">Le G-code remplit le temps d'impression et le poids de filament de la nomenclature. Coût électrique selon tes réglages.</p></div>
   <label>Notes<textarea id="f_notes" placeholder="Idées, réglages, modifications à faire…">${esc(l.notes)}</textarea></label>
   ${blocLiens(l.liens)}
@@ -689,7 +740,7 @@ function editLeurre(id){
     <p class="sub" style="margin:.4rem 0 0">${(()=>{const fs=S.fabrications.filter(z=>z.leurreId===id),n=fs.reduce((s,z)=>s+(Number(z.n)||0),0);return n?`Déjà fabriqué ${n} fois, dernière le ${new Date(fs.map(z=>z.date).sort().pop()).toLocaleDateString("fr-FR")}.`:"Jamais fabriqué."})()}</p></div>`:""}`+actions("leurres",id);
   drawBom();drawLiens();drawMedia("leurres",id);
   wire("leurres",id,()=>{if(!val("f_nom")){toast("Donne un nom au modèle");return}
-    return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),impH:parseDuree($("#f_imph").value),liens:liensSaisis(),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:pnum(b.qte)}))}});
+    return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),impH:parseDuree($("#f_imph").value),moH:parseDuree($("#f_moh").value),prixVente:num("f_pv"),liens:liensSaisis(),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:pnum(b.qte)}))}});
   if(id)$("#fab").onclick=async()=>{
     const norm=x=>JSON.stringify((x||[]).filter(b=>b.articleId).map(b=>[b.articleId,pnum(b.qte)]));
     if(norm(tmpBom)!==norm(l.bom)){toast("La nomenclature a changé : enregistre la fiche avant de fabriquer");return}
@@ -721,14 +772,20 @@ function drawBom(){
     <button class="x" aria-label="Retirer" onclick="tmpBom.splice(${i},1);drawBom()">×</button></div>`}).join("");
   majCout();
 }
-function majCout(){const x={bom:tmpBom,impH:$("#f_imph")?parseDuree($("#f_imph").value):0},m=coutMat(x),i=coutImp(x);
-  $("#cout").textContent="Coût de revient : "+eur(m+i)+(i>0?` (matières ${eur(m)} + impression ${eur(i)})`:"")}
+function majProfil(x){const z=$("#profil");if(!z)return;const m=matiereImp(x),f=filById(m);
+  z.innerHTML=f?`Profil K2 Plus pour ${esc(f.nom)} : buse ${f.buse}, plateau ${f.plateau}, ${f.chauffe?"<b>enceinte chauffée</b>":"enceinte non chauffée"}, environ ${wattsMat(m)} W pendant l'impression.`:"Ajoute un filament dans la nomenclature pour que l'app adapte la consommation électrique au matériau."}
+function majCout(){const x={bom:tmpBom,corps:$("#f_corps")?.value,impH:$("#f_imph")?parseDuree($("#f_imph").value):0,moH:$("#f_moh")?parseDuree($("#f_moh").value):0,prixVente:$("#f_pv")?num("f_pv"):0},c=couts(x);
+  majProfil(x);
+  const parts=[["matières",c.mat],["impression",c.imp],["main d'œuvre",c.mo],["emballage",c.emb]].filter(p=>p[1]>0);
+  $("#cout").innerHTML=`Coût de revient : <b>${eur(c.total)}</b>${parts.length>1?` (${parts.map(p=>p[0]+" "+eur(p[1])).join(" + ")})`:""}`+
+    (x.prixVente>0?`<br>Marge en main propre : <b class="${c.margeMP<0?"st-crit":""}">${eur(c.margeMP)}</b> (${fmt(c.tauxMP,0)} % du prix)`:"")+
+    `<br>Prix conseillé (${fmt(REG().margeVisee??30,0)} % de marge) : <b>${eur(c.conseille)}</b>`}
 function parseDuree(v){v=String(v||"").trim().toLowerCase();if(!v)return 0;
   const m=v.match(/^(?:(\d+)\s*j)?\s*(?:(\d+)\s*h)?\s*(?:(\d+)\s*(?:m|min))?$/);
   if(m&&(m[1]||m[2]||m[3])&&/[jhm]/.test(v)){const h=(+m[1]||0)*24+(+m[2]||0)+(+m[3]||0)/60;return Math.round(h*100)/100}
   const hm=v.match(/^(\d+)h(\d+)$/);if(hm)return Math.round((+hm[1]+hm[2]/60)*100)/100;
   return pnum(v)}
-const DENS={PLA:1.24,PETG:1.27,ABS:1.04,ASA:1.07,TPU:1.21};
+const DENS=Object.fromEntries(FIL.map(f=>[f.id,f.densite]));
 async function importerGcode(f){if(!f)return;
   const tete=await f.slice(0,300000).text(),queue=f.size>300000?await f.slice(Math.max(0,f.size-300000)).text():"",t=tete+"\n"+queue;
   let g=0,h=0,mm=0;
@@ -787,26 +844,158 @@ async function enregEssai(lid,eid){
 async function supprEssai(eid){if(!confirm("Supprimer cette sortie ?"))return;const lid=S.essais.find(x=>x.id===eid)?.leurreId;viewer.close();await remove("essais",eid);toast("Supprimé");if(lid)majBlocEssais(lid)}
 function majBlocEssais(lid){const z=$("#essaisBloc");if(z&&dlg.open)z.outerHTML=blocEssais(lid)}
 
-/* ---------- Réglages ---------- */
-function editReglages(){const r=REG();
-  body.innerHTML=`<h2>Réglages</h2><p class="sub" style="margin:0">Servent à calculer le coût d'impression des leurres.</p>
-  <div class="grid2"><label>Prix de l'électricité (€/kWh)<input id="r_kwh" type="text" inputmode="decimal" value="${vIn(r.kwh??0.25)}"></label>
-  <label>Puissance moyenne de l'imprimante (W)<input id="r_w" type="text" inputmode="decimal" value="${vIn(r.watts??300)}"></label>
-  <label>Usure et entretien (€/h)<input id="r_us" type="text" inputmode="decimal" value="${vIn(r.usure??0)}"></label></div>
-  <p class="sub" style="margin:0">Puissance moyenne : environ 150 à 350 W selon le plateau et la chambre chauffés. Un wattmètre sur la prise donne la vraie valeur. Usure : buses, plateaux, pièces, ramenés à l'heure.</p>
-  <p class="sub" style="margin:0">Dernier export : ${r.dernierExport?new Date(r.dernierExport).toLocaleDateString("fr-FR"):"jamais"}.</p>
-  <div class="actions"><span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" onclick="majReglages({kwh:num('r_kwh'),watts:num('r_w'),usure:num('r_us')}).then(()=>{dlg.close();toast('Réglages enregistrés')})">Enregistrer</button></div>`;
+/* ---------- Coûts et ventes ---------- */
+let ventesOnglet="couts",ventesFiltre="toutes",coutCanal="Main propre";
+const STATUTS_V={apayer:"À encaisser",aexp:"À expédier"};
+const ca=v=>(Number(v.qte)||0)*(Number(v.prixUnit)||0);
+const margeV=v=>ca(v)-(Number(v.commission)||0)-(Number(v.port)||0)-(Number(v.cotis)||0)-(Number(v.qte)||0)*(Number(v.coutUnit)||0);
+function vVentes(){
+  const seg=`<div class="seg" role="group" aria-label="Section">${[["couts","Calcul des coûts"],["ventes","Ventes"],["bilan","Bilan"]].map(([k,l])=>`<button aria-pressed="${ventesOnglet===k}" onclick="ventesOnglet='${k}';render()">${l}</button>`).join("")}</div>`;
+  const btn=`<div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" onclick="editReglages()">Réglages</button><button class="btn" onclick="editVente()">Nouvelle vente</button></div>`;
+  return head("Ventes",btn)+seg+(ventesOnglet==="couts"?vCouts():ventesOnglet==="bilan"?vBilan():vListeVentes());
+}
+function vCouts(){
+  const L=[...S.leurres].sort((a,b)=>(a.nom+a.version).localeCompare(b.nom+b.version)),r=REG();
+  const manque=[];if(!(r.tauxHoraire>0))manque.push("ton taux horaire");if(!(r.kwh>0))manque.push("le prix de l'électricité");
+  return`<p class="sub" style="margin:.75rem 0">Tout se recalcule seul à partir de tes prix d'achat, des G-codes et des réglages. Clique sur un leurre pour modifier sa nomenclature, son temps de main d'œuvre ou son prix.${manque.length?` <b>À renseigner dans les réglages : ${manque.join(", ")}.</b>`:""}</p>
+  <label style="flex-direction:row;align-items:center;gap:.5rem;margin-bottom:.75rem;color:var(--ink)">Canal de vente<select style="width:auto" onchange="coutCanal=this.value;render()">${canaux().map(c=>`<option ${c.nom===coutCanal?"selected":""}>${esc(c.nom)}</option>`).join("")}</select></label>
+  ${L.length?`<div class="tw"><table class="ref couts"><thead><tr><th>Leurre</th><th>Matières</th><th>Impression</th><th>Main d'œuvre</th><th>Emballage</th><th>Coût complet</th><th>Prix de vente</th><th>Frais de vente</th><th>Marge</th><th>Prix conseillé</th><th>En stock</th></tr></thead><tbody>${L.map(l=>{const c=couts({...l},coutCanal),pv=Number(l.prixVente)||0;
+    const fr=pv?pv*(canal(coutCanal).pct/100)+canal(coutCanal).fixe+pv*((r.urssaf??0)/100):0,mg=pv?pv-fr-c.total:null,k=mg===null?"":mg<0?"crit":mg/pv<(r.margeVisee??30)/100?"warn":"ok";
+    return`<tr class="click" onclick="editLeurre('${l.id}')"><td>${esc(l.nom)} <span class="pill">${esc(l.version||"V1")}</span></td><td class="n">${eur(c.mat)}</td><td class="n">${eur(c.imp)}</td><td class="n">${eur(c.mo)}</td><td class="n">${eur(c.emb)}</td><td class="n"><b>${eur(c.total)}</b></td><td class="n">${pv?eur(pv):"—"}</td><td class="n">${pv?eur(fr):"—"}</td><td class="n">${mg===null?"—":`<span class="st-${k}">${ICO_NIV[k]} ${eur(mg)} (${fmt(mg/pv*100,0)} %)</span>`}</td><td class="n">${eur(couts({...l},coutCanal).conseille)}</td><td class="n">${dispo(l.id)}</td></tr>`}).join("")}</tbody></table></div>
+  <p class="sub">Marge : ${ICO_NIV.ok} au-dessus de ta marge visée (${fmt(r.margeVisee??30,0)} %), ${ICO_NIV.warn} en dessous, ${ICO_NIV.crit} vente à perte. Prix conseillé : arrondi au demi-euro supérieur, frais du canal et cotisations compris. En stock : leurres fabriqués moins leurres vendus.</p>`
+  :`<div class="list"><div class="empty">Crée d'abord une fiche leurre avec sa nomenclature.</div></div>`}`;
+}
+function vListeVentes(){
+  const V=[...S.ventes].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const F=V.filter(v=>ventesFiltre==="toutes"||(ventesFiltre==="apayer"&&!v.payee)||(ventesFiltre==="aexp"&&!v.expediee&&v.livraison!=="main"));
+  const nA=V.filter(v=>!v.payee).length,nE=V.filter(v=>!v.expediee&&v.livraison!=="main").length;
+  const stock=S.leurres.map(l=>({l,d:dispo(l.id)})).filter(x=>x.d>0);
+  return`<div class="filters" style="margin-top:.75rem"><button aria-pressed="${ventesFiltre==="toutes"}" onclick="ventesFiltre='toutes';render()">Toutes</button><button aria-pressed="${ventesFiltre==="apayer"}" onclick="ventesFiltre='apayer';render()">À encaisser (${nA})</button><button aria-pressed="${ventesFiltre==="aexp"}" onclick="ventesFiltre='aexp';render()">À expédier (${nE})</button></div>
+  <section class="block"><h2>Leurres prêts à vendre</h2>${stock.length?`<div class="chips">${stock.map(x=>`<button type="button" onclick="editVente(null,'${x.l.id}')">${esc(x.l.nom)} ${esc(x.l.version||"")} : ${x.d}</button>`).join("")}</div>`:`<p class="sub">Aucun leurre en stock. Les leurres apparaissent ici quand tu les fabriques depuis leur fiche.</p>`}</section>
+  <section class="block"><h2>Ventes</h2><div class="list">${F.length?F.slice(0,300).map(v=>{const m=margeV(v);return`<div class="row click" onclick="editVente('${v.id}')"><div class="grow"><h3>${esc(v.nom)} ${esc(v.version||"")} × ${v.qte}</h3><div class="sub">${v.date?new Date(v.date).toLocaleDateString("fr-FR"):""}, ${esc(v.canal)}${v.client?", "+esc(v.client):""}</div>
+    <div class="chips" style="margin-top:.3rem">${!v.payee?`<span class="pill alert">À encaisser</span>`:""}${!v.expediee&&v.livraison!=="main"?`<span class="pill acc">À expédier</span>`:""}</div></div>
+    <div style="text-align:right"><div class="num"><b>${eur(ca(v))}</b></div><div class="sub num ${m<0?"st-crit":""}">marge ${eur(m)}</div></div></div>`}).join(""):`<div class="empty">${V.length?"Aucune vente dans ce filtre.":"Aucune vente. Clique sur Nouvelle vente, ou sur un leurre prêt à vendre."}</div>`}</div></section>`;
+}
+let venteTmp=null;
+function editVente(id,lid){
+  const v=S.ventes.find(x=>x.id===id)||{date:new Date().toISOString().slice(0,10),leurreId:lid||"",qte:1,canal:"Main propre",livraison:"main",payee:true,expediee:false};
+  const L=[...S.leurres].sort((a,b)=>a.nom.localeCompare(b.nom));
+  body.innerHTML=`<h2>${id?"Modifier la vente":"Nouvelle vente"}</h2>
+  <label>Leurre<select id="v_l" onchange="majVente(true)"><option value="">Choisir</option>${L.map(l=>`<option value="${l.id}" ${l.id===v.leurreId?"selected":""}>${esc(l.nom)} ${esc(l.version||"")} (${dispo(l.id)+(l.id===v.leurreId&&id?Number(v.qte)||0:0)} en stock)</option>`).join("")}</select></label>
+  <div class="grid2"><label>Quantité<input id="v_q" type="text" inputmode="numeric" value="${vIn(v.qte)}" oninput="majVente()"></label>
+  <label>Prix unitaire (€)<input id="v_p" type="text" inputmode="decimal" value="${vIn(v.prixUnit??"")}" oninput="majVente()"></label>
+  <label>Canal<select id="v_c" onchange="majVente(false,true)">${canaux().map(c=>`<option ${c.nom===v.canal?"selected":""}>${esc(c.nom)}</option>`).join("")}${canaux().some(c=>c.nom===v.canal)?"":`<option selected>${esc(v.canal)}</option>`}</select></label>
+  <label>Commission (€)<input id="v_com" type="text" inputmode="decimal" value="${vIn(v.commission??"")}" oninput="this.dataset.manuel=1;majVente()" ${v.commission!=null&&id?'data-manuel="1"':""}></label>
+  <label>Livraison<select id="v_liv" onchange="majVente()"><option value="main" ${v.livraison==="main"?"selected":""}>Remis en main propre</option><option value="envoi" ${v.livraison==="envoi"?"selected":""}>Envoi postal</option></select></label>
+  <label>Frais de port à ta charge (€)<input id="v_port" type="text" inputmode="decimal" value="${vIn(v.port??"")}" oninput="majVente()"></label>
+  <label>Date<input id="v_d" type="date" value="${esc(v.date)}"></label>
+  <label>Client (facultatif)<input id="v_cl" value="${esc(v.client)}"></label></div>
+  <div style="display:flex;gap:1.25rem;flex-wrap:wrap"><label style="flex-direction:row;align-items:center;gap:.4rem;color:var(--ink)"><input id="v_pay" type="checkbox" ${v.payee?"checked":""}>Payée</label><label style="flex-direction:row;align-items:center;gap:.4rem;color:var(--ink)" id="v_expl"><input id="v_exp" type="checkbox" ${v.expediee?"checked":""}>Expédiée</label></div>
+  <div class="recap" id="v_rec"></div>
+  <label>Notes<textarea id="v_n">${esc(v.notes)}</textarea></label>`+actions("ventes",id);
+  venteTmp={v,id};majVente(!id);
+  wire("ventes",id,()=>{const l=S.leurres.find(x=>x.id===val("v_l"));if(!l){toast("Choisis le leurre vendu");return}
+    const q=Math.max(1,Math.round(num("v_q")||1)),p=num("v_p");if(!(p>=0)){toast("Indique le prix");return}
+    const d=dispo(l.id)+(id&&v.leurreId===l.id?Number(v.qte)||0:0);
+    if(q>d&&!confirm(`Il ne reste que ${d} ${l.nom} en stock (fabriqués moins vendus). Enregistrer quand même ?`))return;
+    const r=calcVente();
+    return{id:v.id||uid(),date:val("v_d"),leurreId:l.id,nom:l.nom,version:l.version||"",qte:q,prixUnit:p,canal:val("v_c"),commission:r.com,port:r.port,cotis:r.cotis,
+      coutUnit:id&&v.leurreId===l.id&&v.coutUnit!=null?v.coutUnit:Math.round(coutUnitFab(l)*100)/100,livraison:val("v_liv"),payee:$("#v_pay").checked,expediee:val("v_liv")==="main"?true:$("#v_exp").checked,client:val("v_cl"),notes:val("v_n")}});
   dlg.showModal();
+}
+function calcVente(){const q=Math.max(1,Math.round(num("v_q")||1)),p=num("v_p"),c=canal(val("v_c")),tot=q*p;
+  const com=$("#v_com").dataset.manuel?num("v_com"):Math.round((tot*c.pct/100+c.fixe)*100)/100;
+  return{q,p,tot,com,port:val("v_liv")==="envoi"?num("v_port"):0,cotis:Math.round(tot*((REG().urssaf??0)/100)*100)/100}}
+function majVente(leurreChange,canalChange){
+  const l=S.leurres.find(x=>x.id===val("v_l"));
+  if(leurreChange&&l&&!$("#v_p").value.trim()&&l.prixVente)$("#v_p").value=vIn(l.prixVente);
+  if(canalChange)delete $("#v_com").dataset.manuel;
+  const r=calcVente();if(!$("#v_com").dataset.manuel)$("#v_com").value=vIn(r.com);
+  $("#v_expl").style.display=val("v_liv")==="main"?"none":"";
+  $("#v_port").disabled=val("v_liv")==="main";
+  const cu=l?(venteTmp.id&&venteTmp.v.leurreId===l.id&&venteTmp.v.coutUnit!=null?venteTmp.v.coutUnit:coutUnitFab(l)):0,marge=r.tot-r.com-r.port-r.cotis-r.q*cu;
+  $("#v_rec").innerHTML=l?`<div class="mv"><span class="mv-n">Chiffre d'affaires</span><span class="mv-c num">${eur(r.tot)}</span></div>
+    <div class="mv"><span class="mv-n">Commission et frais<small>${esc(val("v_c"))}</small></span><span class="mv-c num">− ${eur(r.com+r.port)}</span></div>
+    ${r.cotis?`<div class="mv"><span class="mv-n">Cotisations estimées</span><span class="mv-c num">− ${eur(r.cotis)}</span></div>`:""}
+    <div class="mv"><span class="mv-n">Coût de revient<small>${fmt(r.q)} × ${eur(cu)}, coût complet ${venteTmp.id?"au moment de la vente":"actuel"}</small></span><span class="mv-c num">− ${eur(r.q*cu)}</span></div>
+    <div class="mv"><span class="mv-n"><b>Marge</b></span><span class="mv-c num ${marge<0?"st-crit":"st-ok"}"><b>${eur(marge)}</b></span></div>`:`<p class="sub">Choisis un leurre pour voir la marge.</p>`;
+}
+function vBilan(){
+  const an=new Date().getFullYear(),V=S.ventes,Va=V.filter(v=>(v.date||"").startsWith(String(an)));
+  const CA=Va.reduce((s,v)=>s+ca(v),0),M=Va.reduce((s,v)=>s+margeV(v),0),N=Va.reduce((s,v)=>s+(Number(v.qte)||0),0),C=Va.reduce((s,v)=>s+(Number(v.cotis)||0),0);
+  const enc=V.filter(v=>!v.payee).reduce((s,v)=>s+ca(v),0);
+  const mois=[];const d0=new Date();for(let i=11;i>=0;i--){const d=new Date(d0.getFullYear(),d0.getMonth()-i,1);mois.push({k:d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0"),l:d.toLocaleDateString("fr-FR",{month:"short"}).replace(".","")})}
+  mois.forEach(m=>{const vs=V.filter(v=>(v.date||"").startsWith(m.k));m.ca=vs.reduce((s,v)=>s+ca(v),0);m.mg=vs.reduce((s,v)=>s+margeV(v),0)});
+  const parM={};V.forEach(v=>{const k=v.leurreId||v.nom;parM[k]=parM[k]||{nom:v.nom+" "+(v.version||""),q:0,ca:0,mg:0};parM[k].q+=Number(v.qte)||0;parM[k].ca+=ca(v);parM[k].mg+=margeV(v)});
+  const parC={};V.forEach(v=>{parC[v.canal]=parC[v.canal]||{q:0,ca:0,mg:0};parC[v.canal].q+=Number(v.qte)||0;parC[v.canal].ca+=ca(v);parC[v.canal].mg+=margeV(v)});
+  if(!V.length)return`<div class="list" style="margin-top:.75rem"><div class="empty">Le bilan apparaîtra dès ta première vente.</div></div>`;
+  return`<div class="kpis" style="margin-top:.75rem"><div class="kpi"><strong class="num">${eur(CA)}</strong><span>chiffre d'affaires ${an}</span></div><div class="kpi ${M<0?"warn":""}"><strong class="num">${eur(M)}</strong><span>marge nette ${an}</span></div><div class="kpi"><strong>${N}</strong><span>leurres vendus en ${an}</span></div><div class="kpi ${enc?"warn":""}"><strong class="num">${eur(enc)}</strong><span>reste à encaisser</span></div></div>
+  ${C?`<p class="sub">Cotisations estimées sur ${an} : ${eur(C)}, déjà déduites de la marge.</p>`:""}
+  <section class="block"><h2>Chiffre d'affaires et marge, 12 derniers mois</h2>${graphe(mois)}</section>
+  <section class="block"><h2>Par modèle</h2><div class="tw"><table class="ref"><thead><tr><th>Leurre</th><th>Vendus</th><th>Chiffre d'affaires</th><th>Marge</th><th>Marge %</th></tr></thead><tbody>${Object.values(parM).sort((a,b)=>b.ca-a.ca).map(x=>`<tr><td>${esc(x.nom)}</td><td class="n">${x.q}</td><td class="n">${eur(x.ca)}</td><td class="n">${eur(x.mg)}</td><td class="n">${x.ca?fmt(x.mg/x.ca*100,0)+" %":"—"}</td></tr>`).join("")}</tbody></table></div></section>
+  <section class="block"><h2>Par canal</h2><div class="tw"><table class="ref"><thead><tr><th>Canal</th><th>Vendus</th><th>Chiffre d'affaires</th><th>Marge</th></tr></thead><tbody>${Object.entries(parC).sort((a,b)=>b[1].ca-a[1].ca).map(([k,x])=>`<tr><td>${esc(k)}</td><td class="n">${x.q}</td><td class="n">${eur(x.ca)}</td><td class="n">${eur(x.mg)}</td></tr>`).join("")}</tbody></table></div></section>`;
+}
+function graphe(m){
+  const W=640,H=220,pl=46,pb=26,pt=10,iw=W-pl-8,ih=H-pb-pt;
+  const max=Math.max(...m.map(x=>Math.max(x.ca,x.mg)),1),min=Math.min(0,...m.map(x=>x.mg));
+  const pas=[1,2,5,10,20,50,100,200,500,1000,2000,5000].find(p=>(max-min)/p<=5)||10000,top=Math.ceil(max/pas)*pas,bot=Math.floor(min/pas)*pas;
+  const y=v=>pt+ih-(v-bot)/(top-bot||1)*ih,gw=iw/m.length,bw=Math.min(16,gw/2-3);
+  let g="";for(let v=bot;v<=top;v+=pas)g+=`<line x1="${pl}" x2="${W-8}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${pl-6}" y="${y(v)+4}" text-anchor="end" class="ax">${v.toLocaleString("fr-FR")} €</text>`;
+  const bar=(x,v,cls,lbl)=>{const y0=y(0),y1=y(v),h=Math.abs(y1-y0);if(!v)return"";const yy=Math.min(y0,y1),r=Math.min(4,h);
+    const d=v>0?`M${x},${y0}V${yy+r}Q${x},${yy} ${x+r},${yy}H${x+bw-r}Q${x+bw},${yy} ${x+bw},${yy+r}V${y0}Z`:`M${x},${y0}V${yy+h-r}Q${x},${yy+h} ${x+r},${yy+h}H${x+bw-r}Q${x+bw},${yy+h} ${x+bw},${yy+h-r}V${y0}Z`;
+    return`<path d="${d}" class="${cls}"><title>${lbl}</title></path>`};
+  const bars=m.map((x,i)=>{const cx=pl+gw*i+gw/2;return bar(cx-bw-1,x.ca,"b1",`${x.l} : chiffre d'affaires ${eur(x.ca)}`)+bar(cx+1,x.mg,"b2",`${x.l} : marge ${eur(x.mg)}`)+`<text x="${cx}" y="${H-8}" text-anchor="middle" class="ax">${x.l}</text>`}).join("");
+  return`<div class="viz"><div class="lgd"><span><i class="b1"></i>Chiffre d'affaires</span><span><i class="b2"></i>Marge nette</span></div>
+  <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Chiffre d'affaires et marge par mois sur 12 mois" style="width:100%;height:auto">${g}<line x1="${pl}" x2="${W-8}" y1="${y(0)}" y2="${y(0)}" class="base"/>${bars}</svg>
+  <details><summary class="sub">Voir les valeurs</summary><div class="tw"><table class="ref"><thead><tr><th>Mois</th><th>Chiffre d'affaires</th><th>Marge</th></tr></thead><tbody>${m.map(x=>`<tr><td>${x.l}</td><td class="n">${eur(x.ca)}</td><td class="n">${eur(x.mg)}</td></tr>`).join("")}</tbody></table></div></details></div>`;
+}
+
+/* ---------- Réglages ---------- */
+let tmpCan=[];
+function drawCan(){$("#r_can").innerHTML=`<div class="lien sub" style="font-size:.8rem"><span style="flex:1 1 8rem">Canal</span><span style="width:5.5rem">Commission %</span><span style="width:5.5rem">Fixe €</span><span style="width:1.6rem"></span></div>`+tmpCan.map((c,i)=>`<div class="lien"><input value="${esc(c.nom)}" oninput="tmpCan[${i}].nom=this.value" aria-label="Nom du canal"><input value="${vIn(c.pct)}" inputmode="decimal" style="flex:0 0 5.5rem" oninput="tmpCan[${i}].pct=this.value" aria-label="Commission en %"><input value="${vIn(c.fixe)}" inputmode="decimal" style="flex:0 0 5.5rem" oninput="tmpCan[${i}].fixe=this.value" aria-label="Frais fixes en euros"><button type="button" class="x" aria-label="Retirer" onclick="tmpCan.splice(${i},1);drawCan()">×</button></div>`).join("")}
+function editReglages(){const r=REG();
+  body.innerHTML=`<h2>Réglages</h2>
+  <div class="bandeau" style="margin:0"><span>Valeurs vérifiées : électricité au Tarif Bleu EDF (option Base, 1er août 2026), SMIC horaire brut (1er juin 2026), cotisations micro-entreprise vente de marchandises, frais Etsy 2026.</span><button type="button" class="btn sm" onclick="if(confirm('Remplacer tous les réglages par les valeurs recommandées ?'))majReglages({...DEF_REG,wattsMat:null}).then(()=>{dlg.close();toast('Valeurs recommandées appliquées');editReglages()})">Valeurs recommandées</button></div>
+  <h3>Impression 3D (Creality K2 Plus)</h3>
+  <div class="grid2"><label>Prix de l'électricité (€/kWh)<input id="r_kwh" type="text" inputmode="decimal" value="${vIn(r.kwh)}"></label>
+  <label>Usure et entretien (€/h)<input id="r_us" type="text" inputmode="decimal" value="${vIn(r.usure)}"></label></div>
+  <p class="sub" style="margin:0">0,2001 €/kWh : Tarif Bleu EDF option Base, 3 à 6 kVA, au 1er août 2026 (le même partout en métropole, Lorient compris). En heures creuses : 0,1589 €/kWh. Usure 0,05 €/h : estimation (buses, PEI, courroies).</p>
+  <div><span class="lbl">Puissance moyenne selon le filament (W)</span><div class="pw">${FIL.map(f=>`<label>${esc(f.id)}<input id="rw_${f.id}" type="text" inputmode="decimal" value="${vIn(r.wattsMat?.[f.id]??f.watts)}"><small>${f.chauffe?"enceinte chauffée":"sans chauffe"}</small></label>`).join("")}</div>
+  <p class="sub" style="margin:.3rem 0 0">PLA et ABS/ASA : plages publiées pour la K2 Plus (150–200 W, 300–400 W). Autres : estimations. Un wattmètre sur la prise donne ta vraie valeur.</p></div>
+  <h3>Coûts et ventes</h3>
+  <div class="grid2"><label>Ton taux horaire (€/h)<input id="r_th" type="text" inputmode="decimal" value="${vIn(r.tauxHoraire)}"></label>
+  <label>Emballage par leurre vendu (€)<input id="r_emb" type="text" inputmode="decimal" value="${vIn(r.emballage)}"></label>
+  <label>Marge visée (% du prix)<input id="r_mv" type="text" inputmode="decimal" value="${vIn(r.margeVisee)}"></label>
+  <label>Cotisations sociales (% du CA)<input id="r_urs" type="text" inputmode="decimal" value="${vIn(r.urssaf)}"></label></div>
+  <p class="sub" style="margin:0">Taux horaire 12,31 € : SMIC horaire brut au 1er juin 2026. Cotisations 12,4 % : micro-entreprise vente de marchandises (12,3 %) + formation professionnelle (0,1 %) ; mets 0 tant que tu n'as pas de statut, 6,2 % environ la première année avec l'ACRE. Emballage 0,80 € : estimation.</p>
+  <h3>Canaux de vente</h3><p class="sub" style="margin:0">Etsy : 6,5 % de transaction + environ 4 % + 0,30 € de paiement + 1,14 % de frais réglementaires (France, depuis juin 2026) + 0,20 $ de mise en vente. Leboncoin et Vinted : 0 % pour un vendeur particulier, les frais de protection sont payés par l'acheteur.</p>
+  <div id="r_can" style="display:flex;flex-direction:column;gap:.4rem"></div>
+  <button type="button" class="btn ghost sm" onclick="tmpCan.push({nom:'',pct:0,fixe:0});drawCan()">Ajouter un canal</button>
+  <p class="sub" style="margin:0">Dernier export : ${r.dernierExport?new Date(r.dernierExport).toLocaleDateString("fr-FR"):"jamais"}.</p>
+  <div class="actions"><span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" onclick="majReglages({kwh:num('r_kwh'),usure:num('r_us'),wattsMat:Object.fromEntries(FIL.map(f=>[f.id,num('rw_'+f.id)])),tauxHoraire:num('r_th'),emballage:num('r_emb'),margeVisee:num('r_mv'),urssaf:num('r_urs'),canaux:tmpCan.filter(c=>(c.nom||'').trim()).map(c=>({nom:c.nom.trim(),pct:pnum(c.pct),fixe:pnum(c.fixe)}))}).then(()=>{dlg.close();toast('Réglages enregistrés')})">Enregistrer</button></div>`;
+  tmpCan=JSON.parse(JSON.stringify(canaux()));drawCan();dlg.showModal();
 }
 
 /* ---------- Références : tableaux libres ---------- */
 const MODELES=[
- {cle:"hamecons-taille",titre:"Hameçons selon la taille du leurre (triple et simple)",categorie:"Hameçons",
-  description:"Stickbaits et poppers à 2 attaches. Choisis la ligne d'après le POIDS du leurre : la longueur n'est qu'indicative (stickbait fin type Carpenter ; un popper trapu sera plus court à poids égal). Triple : chaque hameçon pèse 8 à 10 % du poids du leurre. Simple : ouverture environ 1,6 fois celle du triple remplacé. Ces deux règles sont déduites des préconisations Carpenter et des cotes Owner et BKK.",
-  colonnes:["Longueur stickbait (mm, indicatif)","Poids du leurre (g)","Triple Owner ST-66","Simple inline BKK Lone Diablo","Ouverture triple / simple (mm)","Poids triple / simple (g)"],
-  lignes:[["120–135","20–30","#2 à #1","2/0–3/0","9,4–10,5 / 15,7–17","1,7–2,2 / 1,4–2,1"],["135–155","30–45","1/0","3/0–4/0","11,7 / 17–19,5","3,1 / 2,1–2,7"],["155–170","45–60","2/0","5/0","13,4 / 21,6","4,7 / 3,8"],["170–190","60–80","3/0","7/0","15,1 / 24,5","6,7 / 4,9"],["190–210","80–110","4/0","9/0–11/0","17,5 / 26,2–28,9","9 / 7–9,2"],["210–230","110–150","5/0","11/0–13/0","20,5 / 28,9–33,2","11,5 / 9,2–11,3"]],
+ {cle:"hamecons-triples",titre:"Hameçons triples selon le leurre",categorie:"Hameçons",
+  description:"Stickbaits et poppers à 2 triples. Choisis la ligne d'après le poids du leurre. Règle : chaque triple pèse environ 8 à 10 % du poids du leurre (déduit des préconisations Carpenter).",
+  colonnes:["Poids du leurre (g)","Longueur indicative (mm)","Triple Owner ST-66","Poids d'un triple (g)","Ouverture (mm)","Hauteur (mm)"],
+  lignes:[["20–30","120–135","#2 à #1","1,7–2,2","9,4–10,5","24,7–28,2"],["30–45","135–155","1/0","3,1","11,7","32,3"],["45–60","155–170","2/0","4,7","13,4","35,7"],["60–80","170–190","3/0","6,7","15,1","39,7"],["80–110","190–210","4/0","9","17,5","47,9"],["110–150","210–230","5/0","11,5","20,5","52,2"]],
+  source:"https://www.pechextreme.com/en/treble/198-owner-st66.html",
+  notes:"Longueur : stickbait fin type Carpenter ; un popper trapu est plus court à poids égal. Espacement : la distance entre deux attaches doit dépasser la hauteur d'un triple, sinon ils s'emmêlent. Autre marque : vise le même poids d'hameçon, pas le même numéro."},
+ {cle:"hamecons-simples",titre:"Hameçons simples (inline) selon le leurre",categorie:"Hameçons",
+  description:"Pour remplacer les triples par des simples. Règle : ouverture du simple environ 1,6 fois celle du triple remplacé (calée sur le Carpenter BF75-180 : triples 2/0–3/0 ou simples 5/0–7/0).",
+  colonnes:["Poids du leurre (g)","Remplace le triple","Simple BKK Lone Diablo","Poids d'un simple (g)","Ouverture (mm)","Hauteur (mm)"],
+  lignes:[["20–30","#2 à #1","2/0–3/0","1,4–2,1","15,7–17","30,2–33,3"],["30–45","1/0","3/0–4/0","2,1–2,7","17–19,5","33,3–37"],["45–60","2/0","5/0","3,8","21,6","39,9"],["60–80","3/0","7/0","4,9","24,5","44,5"],["80–110","4/0","9/0–11/0","7–9,2","26,2–28,9","51,5–56,3"],["110–150","5/0","11/0–13/0","9,2–11,3","28,9–33,2","56,3–62"]],
   source:"https://www.pechextreme.com/en/inline-hooks/2162-bkk-lone-diablo-8091-hg.html",
-  notes:"Un simple pèse 25 à 40 % de moins que le triple équivalent : le leurre flotte plus haut et sa nage change. Compense avec un anneau plus lourd ou un peu de lest, et reteste la nage. Espacement : la distance entre deux attaches doit dépasser la hauteur d'un hameçon (ST-66 4/0 : 47,9 mm ; Lone Diablo 9/0 : 51,5 mm), sinon ils s'emmêlent. Cotes ST-66 : pechextreme.com/en/treble/198-owner-st66.html"},
+  notes:"Un simple pèse 25 à 40 % de moins que le triple équivalent : le leurre flotte plus haut et nage autrement. Compense avec un anneau plus lourd ou un peu de lest, puis reteste la nage."},
+ {cle:"anneaux-brises",titre:"Anneaux brisés selon le leurre",categorie:"Hameçons",
+  description:"Règle de base : l'anneau doit tenir au moins autant que le bas de ligne. Au-delà de 80 g, compter environ 2,5 lb de résistance par gramme de leurre (Carpenter : SR 250 lb pour 95 g, SR 350 lb pour 137 g).",
+  colonnes:["Poids du leurre (g)","Bas de ligne typique","Résistance visée","Owner Hyper Wire","Owner Ultra (gros poissons)"],
+  lignes:[["10–20","20–30 lb (9–14 kg)","≥ 45 lb (20 kg)","#3–#4 (45–50 lb)","—"],["20–30","30–40 lb (14–18 kg)","≥ 50 lb (23 kg)","#4–#5 (50–60 lb)","—"],["30–45","40–60 lb (18–27 kg)","≥ 70 lb (32 kg)","#6–#7 (70–80 lb)","—"],["45–60","60–80 lb (27–36 kg)","≥ 110 lb (50 kg)","#8 (120 lb)","#5 (110 lb)"],["60–80","80–100 lb (36–45 kg)","≥ 150 lb (68 kg)","#9 (170 lb)","#6 (150 lb)"],["80–110","100–130 lb (45–59 kg)","≥ 220 lb (100 kg)","#10–#11 (220–250 lb)","#7–#8 (215–240 lb)"],["110–150","130–200 lb (59–91 kg)","≥ 320 lb (145 kg)","—","#9–#10 (320–370 lb)"]],
+  source:"https://discounttackle.com/products/owner-hyperwire-stainless-steel-split-rings",
+  notes:"Diamètres Hyper Wire (int./ext.) : #3 4,5/6 mm, #4 5/7, #5 5,5/7,5, #6 6/8, #7 7/9, #8 8/11 mm. Le triple doit pouvoir pivoter librement : un anneau trop petit bloque l'hameçon, trop gros il s'emmêle. Résistances Owner Ultra : tomostackle.com. Les « résistance visée » sont une règle déduite, pas une norme."},
  {cle:"carpenter-bluefish",titre:"Préconisations fabricant : Carpenter Blue Fish",categorie:"Hameçons",
   description:"Valeurs publiées pour des stickbaits de référence, utiles pour caler tes propres modèles par comparaison.",
   colonnes:["Modèle","Longueur (mm)","Poids (g)","Hameçons préconisés","Anneau brisé"],
@@ -814,27 +1003,52 @@ const MODELES=[
   source:"https://gtfightclub.com/products/carpenter-blue-fish-bf100-topwater-stickbait-lures",
   notes:"Sources : fiches produit GT Fight Club (BF100-200, BF140-225) et Pêchextrême (BF75-180)."}
 ];
+const OBSOLETES=["hamecons-taille","st66-poids"];
 function vRefs(){
   if(refSel==="especes"||refSel==="especes-fr")return vEspeces("fr");
   if(refSel==="especes-nc")return vEspeces("nc");
+  if(refSel==="filaments")return vFilaments();
   if(refSel){const r=S.refs.find(x=>x.id===refSel);if(r)return `<button class="back" onclick="refSel=null;render()">‹ Références</button>`+refCard(r);refSel=null}
   const q=(window._rq||"").toLowerCase();
   const items=[{id:"especes-fr",titre:"Proies et prédateurs (France)",categorie:"Pêche",description:"Ce que mange chaque espèce, en mer et en eau douce, avec photos et robe des poissons fourrage.",n:ESP.filter(e=>zoneDe(e)==="fr").length+" espèces"},
+    {id:"filaments",titre:"Filaments d'impression 3D",categorie:"Impression 3D",description:"PLA, PETG, ABS, ASA, TPU, PC, PA-CF : avantages, inconvénients, réglages K2 Plus et usage pour les leurres.",n:FIL.length+" matériaux"},
     {id:"especes-nc",titre:"Proies et prédateurs (Nouvelle-Calédonie)",categorie:"Pêche",description:"Lagon, récif et large : ce que mangent carangues, thazards, thons, wahoos et marlins.",n:ESP.filter(e=>zoneDe(e)==="nc").length+" espèces"},
     ...S.refs.map(r=>({id:r.id,titre:r.titre,categorie:r.categorie||"Divers",description:r.description||"",n:(r.lignes||[]).length+" ligne"+((r.lignes||[]).length>1?"s":"")}))]
     .filter(r=>!q||(r.titre+" "+r.categorie+" "+r.description).toLowerCase().includes(q));
   const cats=[...new Set(items.map(i=>i.categorie))].sort((a,b)=>a.localeCompare(b));
   const manquants=MODELES.filter(m=>!S.refs.some(r=>r.cle===m.cle));
+  const vieux=S.refs.filter(r=>OBSOLETES.includes(r.cle));
   return head("Références",`<button class="btn" onclick="editRef()">Nouveau tableau</button>`)+
   `<input class="search" type="search" placeholder="Rechercher un sujet" value="${esc(window._rq||"")}" oninput="window._rq=this.value;clearTimeout(window._rt);window._rt=setTimeout(()=>{render();const i=$('.search');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)" aria-label="Rechercher">`+
-  (manquants.length?`<div class="list" style="margin-bottom:1.25rem"><div class="row"><div class="grow">Tableaux de départ disponibles<div class="sub">${manquants.map(m=>esc(m.titre)).join(", ")}</div></div><button class="btn ghost sm" onclick="ajouterModeles()">Ajouter</button></div></div>`:"")+
+  (vieux.length?`<div class="bandeau"><span>Une nouvelle version des tableaux d'hameçons est disponible (triples et simples séparés, anneaux brisés).</span><button class="btn sm" onclick="majModeles()">Mettre à jour</button></div>`:"")+
+  (manquants.length&&!vieux.length?`<div class="list" style="margin-bottom:1.25rem"><div class="row"><div class="grow">Tableaux de départ disponibles<div class="sub">${manquants.map(m=>esc(m.titre)).join(", ")}</div></div><button class="btn ghost sm" onclick="ajouterModeles()">Ajouter</button></div></div>`:"")+
   (items.length?cats.map(c=>`<section class="block"><h2 class="grp">${esc(c)}</h2><div class="list">${items.filter(i=>i.categorie===c).sort((a,b)=>a.titre.localeCompare(b.titre)).map(i=>`<div class="row click" role="button" tabindex="0" onclick="ouvrirRef('${i.id}')" onkeydown="if(event.key==='Enter')ouvrirRef('${i.id}')"><div class="grow"><h3>${esc(i.titre)}</h3>${i.description?`<div class="sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.description)}</div>`:""}</div><span class="sub num">${esc(i.n)}</span></div>`).join("")}</div></section>`).join("")
   :`<div class="list"><div class="empty">Aucun sujet ne correspond.</div></div>`);
 }
 function ouvrirRef(id){refSel=id;render();scrollTo(0,0)}
 
+/* ---------- Filaments ---------- */
+const CRIT_FIL=[["uv","Résistance UV"],["eau","Tenue à l'eau / sel"],["meca","Résistance mécanique"],["choc","Résistance aux chocs"],["chaleur","Tenue à la chaleur"],["flex","Souplesse"],["facilite","Facilité d'impression"]];
+const notePts=n=>`<span class="pts" aria-label="${n} sur 5">${[1,2,3,4,5].map(i=>`<i class="${i<=n?"on":""}"></i>`).join("")}</span>`;
+function vFilaments(){
+  return`<button class="back" onclick="refSel=null;render()">‹ Références</button>`+head("Filaments d'impression 3D")+
+  `<p class="sub">Notes de 1 à 5. Réglages de départ pour la Creality K2 Plus (buse 0,4 mm, plateau jusqu'à 120 °C, enceinte chauffée jusqu'à 60 °C) : le profil Creality Print de ta bobine reste la référence.</p>
+  <div class="tw"><table class="ref"><thead><tr><th>Critère</th>${FIL.map(f=>`<th>${esc(f.id)}</th>`).join("")}</tr></thead><tbody>
+  ${CRIT_FIL.map(([k,l])=>`<tr><td>${l}</td>${FIL.map(f=>`<td>${notePts(f.notes[k])}</td>`).join("")}</tr>`).join("")}
+  <tr><td>Densité</td>${FIL.map(f=>`<td class="n">${fmt(f.densite)}</td>`).join("")}</tr>
+  <tr><td>Tenue en température</td>${FIL.map(f=>`<td class="n">${esc(f.hdt)}</td>`).join("")}</tr>
+  <tr><td>Enceinte chauffée</td>${FIL.map(f=>`<td>${f.chauffe?"Oui":"Non"}</td>`).join("")}</tr>
+  <tr><td>Puissance K2 Plus</td>${FIL.map(f=>`<td class="n">≈ ${wattsMat(f.id)} W</td>`).join("")}</tr>
+  <tr><td>Prix indicatif</td>${FIL.map(f=>`<td class="n">${esc(f.prixKg)}/kg</td>`).join("")}</tr></tbody></table></div>
+  <div class="fil-grid">${FIL.map(f=>`<article class="fil"><h2>${esc(f.nom)}</h2>
+    <dl><dt>Buse</dt><dd>${esc(f.buse)}</dd><dt>Plateau</dt><dd>${esc(f.plateau)}</dd><dt>Enceinte</dt><dd>${esc(f.chambre)}</dd><dt>Consommation</dt><dd>≈ ${wattsMat(f.id)} W (${esc(f.wattsSrc)}), soit ${eur(wattsMat(f.id)/1000*REG().kwh)} d'électricité par heure</dd><dt>Densité</dt><dd>${fmt(f.densite)} g/cm³</dd></dl>
+    <div class="pm"><div><span class="lbl st-ok">Avantages</span><ul>${f.plus.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div><div><span class="lbl st-crit">Inconvénients</span><ul>${f.moins.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div></div>
+    <p style="margin:0"><b>Pour tes leurres :</b> ${esc(f.leurres)}</p></article>`).join("")}</div>
+  <p class="sub">Sources : caractéristiques K2 Plus (3DJake), guide des températures d'enceinte K2 (Creality), plages de consommation publiées (3D Print Pricing), propriétés comparées ASA/ABS/PETG/PLA (Unionfab). Températures et puissances des PC, PA-CF, PETG et TPU : estimations à confirmer.</p>`;
+}
+
 /* ---------- Proies et prédateurs ---------- */
-const ESP=window.ESPECES||[];
+const ESP=(window.ESPECES||[]).map(e=>({...e,...(window.ESPECES_DETAILS||{})[e.id],mange:[...(e.mange||[]),...((window.MANGE_PLUS||{})[e.id]||[])]}));
 const espById=id=>ESP.find(e=>e.id===id);
 const mangePar=id=>ESP.filter(e=>(e.mange||[]).includes(id));
 const zoneDe=e=>e.zone||"fr";
@@ -844,10 +1058,11 @@ let milieux={fr:"mer",nc:"lagon"};
 function vEspeces(zone){
   const Z=ZONES[zone],milieu=milieux[zone];
   const L=ESP.filter(e=>zoneDe(e)===zone&&e.milieu===milieu);
-  const preds=L.filter(e=>e.roles.includes("predateur")),proies=L.filter(e=>e.roles.includes("proie"));
+  const preds=L.filter(e=>e.roles.includes("predateur")),proies=L.filter(e=>e.roles.includes("proie")&&!e.groupe),autres=L.filter(e=>e.groupe);
   const chips=ids=>`<div class="chips">${ids.map(id=>{const e=espById(id);return e?`<button type="button" onclick="event.stopPropagation();ficheEsp('${e.id}')">${esc(e.nom)}</button>`:""}).join("")}</div>`;
   const card=(e,mode)=>`<article class="sp"><button type="button" class="ph" data-id="${e.id}" data-nom="${esc(e.nom)}" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}" onclick="ficheEsp('${e.id}')" aria-label="Fiche ${esc(e.nom)}">${esc(e.nom)}</button>
     <div class="bd"><h3 onclick="ficheEsp('${e.id}')">${esc(e.nom)}</h3><div class="sci">${esc(e.sci)}, ${esc(e.taille)}</div>
+    ${e.groupe?`<span class="pill" style="align-self:flex-start">${esc(e.groupe)}</span>`:""}
     ${mode==="pred"?((e.mange||[]).length?`<span class="lbl">Mange</span>${chips(e.mange)}`:`<span class="lbl">Mange</span><div class="sub">${esc(e.autres)}</div>`)
       :(mangePar(e.id).length?`<span class="lbl">Mangé par</span>${chips(mangePar(e.id).map(x=>x.id))}`:"")}</div></article>`;
   setTimeout(chargerPhotos,0);
@@ -855,6 +1070,7 @@ function vEspeces(zone){
   `<div class="seg" role="group" aria-label="Milieu">${Z.milieux.map(([k,l])=>`<button aria-pressed="${milieu===k}" onclick="milieux['${zone}']='${k}';render()">${l}</button>`).join("")}</div>
   <section><h2 style="margin-bottom:.6rem">Prédateurs</h2><div class="sp-grid">${preds.map(e=>card(e,"pred")).join("")}</div></section>
   <section><h2 style="margin-bottom:.25rem">Poissons fourrage</h2><p class="sub" style="margin:0 0 .75rem">Les petits poissons chassés, avec leur robe : utile pour peindre tes leurres.</p><div class="sp-grid">${proies.map(e=>card(e,"proie")).join("")}</div></section>
+  ${autres.length?`<section><h2 style="margin-bottom:.25rem">Autres proies : mollusques, crustacés, vers, insectes</h2><p class="sub" style="margin:0 0 .75rem">Tout ce qui n'est pas un poisson mais finit dans l'estomac des prédateurs.</p><div class="sp-grid">${autres.map(e=>card(e,"proie")).join("")}</div></section>`:""}
   <p class="sub">Photos et fiches : Wikipédia (Wikimedia Commons). Régimes alimentaires : synthèse de connaissances générales sur chaque espèce, à compléter par tes observations.</p>`;
 }
 function ficheEsp(id){
@@ -864,8 +1080,9 @@ function ficheEsp(id){
   const vb=$("#viewerBody");
   vb.innerHTML=`<div class="spd" style="display:flex;flex-direction:column;gap:.8rem"><div class="ph" data-id="${e.id}" data-nom="${esc(e.nom)}" data-sci="${esc(e.sci)}" data-wiki="${esc(e.wiki)}">Chargement de la photo…</div>
   <div><h2>${esc(e.nom)}</h2><div class="sci">${esc(e.sci)}</div></div>
-  <dl><dt>Taille</dt><dd>${esc(e.taille)}</dd><dt>Milieu</dt><dd>${zoneDe(e)==="nc"?"Nouvelle-Calédonie, ":""}${NOM_MILIEU[e.milieu]||e.milieu}</dd><dt>Habitat</dt><dd>${esc(e.habitat||"")}</dd>${e.robe?`<dt>Robe</dt><dd>${esc(e.robe)}</dd>`:""}</dl>
-  ${e.roles.includes("predateur")?`<div><span class="lbl">Poissons mangés</span>${(e.mange||[]).length?chips(e.mange):`<div class="sub">Peu ou pas de poissons</div>`}${e.autres?`<p style="margin:.4rem 0 0">${esc(e.autres)}</p>`:""}</div>`:""}
+  <dl>${e.groupe?`<dt>Groupe</dt><dd>${esc(e.groupe)}</dd>`:""}<dt>Taille</dt><dd>${esc(e.taille)}</dd><dt>Milieu</dt><dd>${zoneDe(e)==="nc"?"Nouvelle-Calédonie, ":""}${NOM_MILIEU[e.milieu]||e.milieu}</dd><dt>Habitat</dt><dd>${esc(e.habitat||"")}</dd>${[["Comportement",e.comportement],["Saison",e.saison],["Profondeur",e.profondeur],["Robe",e.robe],["Techniques",e.techniques],["Leurre qui l'imite",e.imitation],["Taille légale",e.maille]].filter(x=>x[1]).map(([k,v])=>`<dt>${k}</dt><dd>${esc(v)}</dd>`).join("")}</dl>
+  ${e.maille?`<p class="sub" style="margin:0">Taille légale indicative : elle varie selon la zone et l'année. Vérifie l'arrêté de ton département ou de ta zone maritime avant de garder un poisson.</p>`:""}
+  ${e.roles.includes("predateur")?`<div><span class="lbl">Proies</span>${(e.mange||[]).length?chips(e.mange):`<div class="sub">Peu ou pas de poissons</div>`}${e.autres?`<p style="margin:.4rem 0 0">${esc(e.autres)}</p>`:""}</div>`:""}
   ${par.length?`<div><span class="lbl">Mangé par</span>${chips(par.map(x=>x.id))}</div>`:""}
   ${e.conseil?`<p style="margin:0"><b>Pour tes leurres :</b> ${esc(e.conseil)}</p>`:""}
   <details><summary class="sub" style="cursor:pointer">Remplacer la photo</summary>
@@ -924,6 +1141,9 @@ function refCard(r){
   ${r.source?`<p>Source : ${/^https?:\/\//.test(r.source)?`<a href="${esc(r.source)}" target="_blank" rel="noopener">${esc(r.source.replace(/^https?:\/\/(www\.)?/,"").split("/")[0])}</a>`:esc(r.source)}</p>`:""}
   ${(r.medias||[]).length?`<p>${r.medias.length} média${r.medias.length>1?"s":""} attaché${r.medias.length>1?"s":""} (ouvre « Modifier »)</p>`:""}</section>`;
 }
+async function majModeles(){const ops=S.refs.filter(r=>OBSOLETES.includes(r.cle)).map(r=>({op:"del",c:"refs",id:r.id}));
+  MODELES.filter(m=>!S.refs.some(r=>r.cle===m.cle)).forEach(m=>ops.push({op:"set",c:"refs",id:"modele-"+m.cle,data:{...m,lignes:m.lignes.map(v=>({v})),medias:[]}}));
+  try{await store.batch(ops);toast("Tableaux mis à jour")}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
 async function ajouterModeles(){
   for(const m of MODELES.filter(m=>!S.refs.some(r=>r.cle===m.cle)))
     await save("refs",{id:"modele-"+m.cle,...m,lignes:m.lignes.map(v=>({v})),medias:[]});
