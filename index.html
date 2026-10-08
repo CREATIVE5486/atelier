@@ -238,6 +238,11 @@ table.couts td.n svg{vertical-align:-1px}
 .fil dl{display:grid;grid-template-columns:auto 1fr;gap:.3rem .8rem;margin:0;font-size:.9rem}.fil dt{color:var(--muted);font-weight:600}.fil dd{margin:0}
 .pm{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;font-size:.88rem}.pm ul{margin:.3rem 0 0;padding-left:1.1rem}.pm li{margin-bottom:.2rem}
 @media (max-width:520px){.pm{grid-template-columns:1fr}}
+.kpis.kpis3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:760px){.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.6rem,1fr));width:100%}.seg button{white-space:normal;line-height:1.15;padding:.5rem .35rem}}
+.mo{display:none}@media (max-width:760px){.mh{display:none}.mo{display:inline}}
+.pese{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin-top:.4rem}.pese label,.pese input{min-width:0}.pese input{box-sizing:border-box;width:100%;max-width:100%}
+@media (max-width:760px){.kpis.kpis3 .kpi{padding:.7rem}.kpis.kpis3 .kpi strong{font-size:1.45rem}.kpis.kpis3 .kpi span{font-size:.78rem}.seg button{font-size:.88rem}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
@@ -264,7 +269,7 @@ table.couts td.n svg{vertical-align:-1px}
 <script src="filaments.js"></script>
 <script>
 /* ---------- Données ---------- */
-const COLS=["projets","articles","leurres","refs","fabrications","photos","mouvements","essais","reglages","ventes"];
+const COLS=["projets","articles","leurres","refs","fabrications","photos","mouvements","essais","reglages","ventes","sorties","lots","factures","inventaires"];
 const S=Object.fromEntries(COLS.map(c=>[c,[]]));
 let view="accueil", filtre="tous", store=null, refSel=null;
 
@@ -279,7 +284,7 @@ function cloudStore(uidv){
   const col=c=>F.collection(F.db,"users",uidv,c);
   return{
     listen(c,cb,err){const q=c==="mouvements"&&F.query?F.query(col(c),F.orderBy("date","desc"),F.limit(1500)):col(c);return F.onSnapshot(q,s=>cb(s.docs.map(d=>({...d.data(),id:d.id}))),err)},
-    async batch(ops){const b=F.writeBatch(F.db);const J=x=>JSON.parse(JSON.stringify(x));ops.forEach(o=>{const r=this.ref(o.c,o.id);if(o.op==="inc")b.update(r,{qte:F.increment(o.d)});else if(o.op==="set")b.set(r,J(o.data));else if(o.op==="upd")b.update(r,J(o.f));else if(o.op==="del")b.delete(r)});await b.commit()},
+    async batch(ops){const b=F.writeBatch(F.db);const J=x=>JSON.parse(JSON.stringify(x));ops.forEach(o=>{const r=this.ref(o.c,o.id);if(o.op==="inc")b.update(r,{qte:F.increment(o.d)});else if(o.op==="incf")b.update(r,{[o.f]:F.increment(o.d)});else if(o.op==="set")b.set(r,J(o.data));else if(o.op==="upd")b.update(r,J(o.f));else if(o.op==="del")b.delete(r)});await b.commit()},
     ref:(c,id)=>F.doc(F.db,"users",uidv,c,id),
     async save(c,o){const {id,...b}=o;await F.setDoc(this.ref(c,id),JSON.parse(JSON.stringify(b)))},
     async update(c,id,f){await F.updateDoc(this.ref(c,id),JSON.parse(JSON.stringify(f)))},
@@ -305,7 +310,7 @@ function boot(f){
     if(!u){view="login";COLS.forEach(c=>S[c]=[]);render();return}
     if(["login","chargement"].includes(view))view="accueil";
     store=cloudStore(u.uid);majReseau();
-    COLS.forEach(c=>unsubs.push(store.listen(c,rows=>{S[c]=rows;render()},e=>setSync("off","Erreur de synchro ("+e.code+")"))));
+    const charge=new Set();migrOK=false;COLS.forEach(c=>unsubs.push(store.listen(c,rows=>{S[c]=rows;charge.add(c);if(charge.size===COLS.length&&navigator.onLine)migrerLots();render()},e=>setSync("off","Erreur de synchro ("+e.code+")"))));
     render();
   });
 }
@@ -330,7 +335,7 @@ function exporter(){
   document.body.appendChild(a);a.click();a.remove();toast("Sauvegarde téléchargée");
   majReglages({dernierExport:new Date().toISOString()});
 }
-const DEF_REG={kwh:0.2001,watts:175,usure:0.05,tauxHoraire:12.31,emballage:0.8,margeVisee:30,urssaf:12.4,
+const DEF_REG={purgeG:2,kwh:0.2001,watts:175,usure:0.05,tauxHoraire:12.31,emballage:0.8,margeVisee:30,urssaf:12.4,
   canaux:[{nom:"Main propre",pct:0,fixe:0},{nom:"Leboncoin",pct:0,fixe:0},{nom:"Vinted",pct:0,fixe:0},{nom:"Etsy",pct:11.64,fixe:0.48},{nom:"Site perso",pct:0,fixe:0},{nom:"Salon / marché",pct:0,fixe:0}]};
 const REG=()=>{const r=S.reglages.find(x=>x.id==="general")||{};return{...DEF_REG,...Object.fromEntries(Object.entries(r).filter(([k,v])=>v!==null&&v!==undefined))}};
 async function majReglages(f){const brut=S.reglages.find(x=>x.id==="general")||{};try{await store.save("reglages",{...brut,...f,id:"general"})}catch(e){}}
@@ -363,7 +368,8 @@ const lotQ=a=>Number(a?.lotQte)>0?Number(a.lotQte):cfg(a).lot;
 const pu=a=>!a?0:(Number(a.prixLot)>0&&lotQ(a)>0?Number(a.prixLot)/lotQ(a):(Number(a.prix)||0));
 const nomArt=a=>a?(a.nom||[a.matiere,a.couleur].filter(Boolean).join(" ")||"Sans nom"):"Article supprimé";
 const enLots=a=>{const n=(Number(a.qte)||0)/lotQ(a),c=cfg(a);return fmt(n)+" "+(n>1?c.lotsNom:c.lotNom)};
-const coutMat=l=>(l.bom||[]).reduce((s,b)=>s+pu(art(b.articleId))*pnum(b.qte),0);
+const coutMat=l=>(l.bom||[]).reduce((s,b)=>s+coutFifo(b.articleId,pnum(b.qte)),0)+coutPurge(l);
+const coutPurge=l=>{const f=filsDe(l)[0];return f?coutFifo(f.articleId,(Number(REG().purgeG)||0)/Math.max(1,Math.round(pnum(l.parPlateau))||1)):0};
 const matiereImp=l=>{const b=(l.bom||[]).map(x=>art(x.articleId)).find(a=>a?.categorie==="Filament");return b?.matiere||(FILAMENTS.includes(l.corps)?l.corps:"")};
 const wattsMat=m=>{const r=REG();return Number(r.wattsMat?.[m])||filById(m)?.watts||r.watts};
 const coutImp=l=>{const h=pnum(l.impH),r=REG();if(!(h>0))return 0;return h*(wattsMat(matiereImp(l))/1000)*r.kwh+h*r.usure};
@@ -384,7 +390,8 @@ function couts(l,canalNom){
 }
 const fabTot=id=>S.fabrications.filter(f=>f.leurreId===id).reduce((s,f)=>s+(Number(f.n)||0),0);
 const venduTot=id=>S.ventes.filter(v=>v.leurreId===id).reduce((s,v)=>s+(Number(v.qte)||0),0);
-const dispo=id=>fabTot(id)-venduTot(id);
+const sortiTot=id=>S.sorties.filter(x=>x.leurreId===id).reduce((s,x)=>s+(Number(x.n)||0),0);
+const dispo=id=>fabTot(id)-venduTot(id)-sortiTot(id);
 const coutUnitFab=l=>coutLeurre(l);
 const stockBas=()=>S.articles.filter(a=>Number(a.seuil)>0&&Number(a.qte)<=Number(a.seuil));
 const fabricables=l=>{const r=(l.bom||[]).filter(b=>Number(b.qte)>0).map(b=>Math.floor((Number(art(b.articleId)?.qte)||0)/Number(b.qte)));return r.length?Math.min(...r):0};
@@ -401,7 +408,7 @@ const head=(t,btn)=>`<div class="head"><div><h1>${t}</h1><div class="mob-sync" i
 
 function vAccueil(){
   const bas=stockBas(), actifs=S.projets.filter(p=>p.statut==="En cours");
-  const valeur=S.articles.reduce((s,a)=>s+(Number(a.qte)||0)*pu(a),0);
+  const valeur=S.articles.reduce((s,a)=>s+valeurArt(a),0);
   const now=new Date(),fabMois=S.fabrications.filter(f=>{const d=new Date(f.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()}).reduce((s,f)=>s+(Number(f.n)||0),0);
   const taches=S.projets.flatMap(p=>(p.taches||[]).filter(t=>!t.fait).map(t=>({...t,p})));
   return head("Accueil",`<div style="display:flex;gap:.5rem;flex-wrap:wrap">${OD.pca&&!OD.compte()?`<button class="btn ghost sm" onclick="OD.connecter()">Connecter OneDrive</button>`:""}<button class="btn ghost sm" onclick="editReglages()">Réglages</button><button class="btn ghost sm" onclick="exporter()">Exporter</button><button class="btn ghost sm" onclick="logout()">Déconnexion</button></div>`)+bandeauExport()+`
@@ -460,7 +467,7 @@ function bobine(a){
 }
 function panneauStock(l){
   const fil=l.filter(a=>a.categorie==="Filament"),autres=l.filter(a=>a.categorie!=="Filament");
-  const parCat=CATS.map(c=>({c,v:S.articles.filter(a=>a.categorie===c).reduce((s,a)=>s+(Number(a.qte)||0)*pu(a),0)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
+  const parCat=CATS.map(c=>({c,v:S.articles.filter(a=>a.categorie===c).reduce((s,a)=>s+valeurArt(a),0)})).filter(x=>x.v>0).sort((a,b)=>b.v-a.v);
   const vmax=Math.max(...parCat.map(x=>x.v),1),tot=parCat.reduce((s,x)=>s+x.v,0);
   const crit=S.articles.filter(a=>niveau(a).k==="crit").length,warn=S.articles.filter(a=>niveau(a).k==="warn").length;
   return`<div class="pan">
@@ -471,7 +478,7 @@ function panneauStock(l){
   </div>`;
 }
 function vStock(){
-  if(stockOnglet==="journal")return vJournal();if(stockOnglet==="courses")return vCourses();
+  if(stockOnglet==="journal")return vJournal();if(stockOnglet==="courses")return vCourses();if(stockOnglet==="finis")return vFinis();if(stockOnglet==="inventaire")return vInventaire();
   const q=stockQ.trim().toLowerCase();
   const l=S.articles.filter(a=>(filtre==="tous"||a.categorie===filtre)&&(!q||(nomArt(a)+" "+(a.fournisseur||"")+" "+a.categorie).toLowerCase().includes(q))).sort((a,b)=>(CATS.indexOf(a.categorie)-CATS.indexOf(b.categorie))||nomArt(a).localeCompare(nomArt(b)));
   const lk=stockVerrou;
@@ -484,7 +491,7 @@ function vStock(){
       <button aria-label="Ajouter 1 ${c.lotNom}" ${lk?"disabled":""} onclick="bouger('${a.id}',1)">+</button></div></div>`}).join("")
     :`<div class="empty">${S.articles.length?"Aucun article ne correspond.":"Aucun article. Ajoute tes bobines, résines et hameçons avec un seuil d'alerte."}</div>`}</div>
   ${l.length?`<p class="sub">${lk?"Les boutons + et − sont verrouillés : touche le cadenas pour les activer. ":""}+ et − ajoutent ou retirent un conditionnement entier (une bobine, un sachet…). Pour une quantité précise, ouvre l'article.</p>`:""}`;
-  return head("Stock",`<div style="display:flex;gap:.5rem;align-items:center"><button class="btn ghost lock ${lk?"":"open"}" onclick="basculerVerrou()" aria-pressed="${!lk}" title="${lk?"Déverrouiller les boutons + et −":"Verrouiller les boutons + et −"}">${lk?ICO_LOCK:ICO_OPEN}<span>${lk?"Verrouillé":"Déverrouillé"}</span></button><button class="btn" onclick="editArticle()">Nouvel article</button></div>`)
+  return head("Stock",`<div style="display:flex;gap:.5rem;align-items:center"><button class="btn ghost lock ${lk?"":"open"}" onclick="basculerVerrou()" aria-pressed="${!lk}" title="${lk?"Déverrouiller les boutons + et −":"Verrouiller les boutons + et −"}">${lk?ICO_LOCK:ICO_OPEN}<span class="mh">${lk?"Verrouillé":"Déverrouillé"}</span></button><button class="btn ghost" onclick="editFacture()"><span class="mh">Importer une facture</span><span class="mo">Facture</span></button><button class="btn" onclick="editArticle()">Nouvel article</button></div>`)
   +ongletsStock()+`<div class="seg seg-mob" role="group" aria-label="Affichage"><button aria-pressed="${stockVue==="liste"}" onclick="stockVue='liste';render()">Liste</button><button aria-pressed="${stockVue==="visuel"}" onclick="stockVue='visuel';render()">Vue d'ensemble</button></div>`
   +`<input class="search" type="search" placeholder="Rechercher un article" value="${esc(stockQ)}" oninput="stockQ=this.value;clearTimeout(window._sq);window._sq=setTimeout(()=>{render();const i=$('.search');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)" aria-label="Rechercher un article">`
   +filters(CATS)+`<div class="stock-grid vue-${stockVue}"><div class="stock-liste">${liste}</div><aside class="stock-pan" aria-label="Vue d'ensemble du stock">${panneauStock(l)}</aside></div>`;
@@ -492,7 +499,7 @@ function vStock(){
 const ICO_LOCK='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
 const ICO_OPEN='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>';
 function ongletsStock(){const nb=S.articles.filter(a=>niveau(a).k!=="ok").length;
-  return`<div class="seg" role="group" aria-label="Section du stock" style="margin-right:.5rem">${[["articles","Articles"],["journal","Journal"],["courses","Courses"+(nb?` (${nb})`:"")]].map(([k,l])=>`<button aria-pressed="${stockOnglet===k}" onclick="stockOnglet='${k}';render()">${l}</button>`).join("")}</div>`}
+  return`<div class="seg" role="group" aria-label="Section du stock" style="margin-right:.5rem">${[["articles","Matières premières"],["finis","Produits finis"],["inventaire","Inventaire"],["journal","Journal"],["courses","Courses"+(nb?` (${nb})`:"")]].map(([k,l])=>`<button aria-pressed="${stockOnglet===k}" onclick="stockOnglet='${k}';render()">${l}</button>`).join("")}</div>`}
 function vJournal(){
   const L=S.mouvements.filter(m=>jrnMotif==="tous"||m.motif===jrnMotif).sort((a,b)=>b.date.localeCompare(a.date));
   const mois=new Date();const ceMois=S.mouvements.filter(m=>{const d=new Date(m.date);return m.motif==="achat"&&d.getMonth()===mois.getMonth()&&d.getFullYear()===mois.getFullYear()}).reduce((s,m)=>s+(Number(m.cout)||0),0);
@@ -500,6 +507,369 @@ function vJournal(){
   <p class="sub">Achats ce mois-ci : <b class="num">${eur(ceMois)}</b>. Le journal garde les 1 500 derniers mouvements.</p>
   <div class="list" style="padding:.25rem .75rem">${L.length?L.slice(0,300).map(ligneMvt).join(""):`<div class="empty">Aucun mouvement. Chaque +, −, achat, fabrication ou correction de quantité s'enregistre ici.</div>`}</div>`;
 }
+/* ---------- Lots matière : chaque achat garde son prix, consommation des plus anciens d'abord ---------- */
+const r2=x=>Math.round((Number(x)||0)*100)/100,r3=x=>Math.round((Number(x)||0)*1000)/1000;
+const ORIG_LOT={achat:"",initial:"stock existant",ajustement:"ajustement",retour:"remis en stock",inventaire:"inventaire",facture:""};
+const lotsDe=aid=>S.lots.filter(x=>x.articleId===aid&&Number(x.reste)>1e-9).sort((a,b)=>(a.date||"").localeCompare(b.date||"")||(a.id<b.id?-1:1));
+function fifo(aid,q){const a=art(aid);let r=Math.max(0,Number(q)||0);const parts=[];let cost=0;
+  for(const l of lotsDe(aid)){if(r<=1e-9)break;const t=Math.min(r,Number(l.reste)),p=Number(l.pu)||0;parts.push({lotId:l.id,q:t,pu:p});cost+=t*p;r-=t}
+  if(r>1e-9){const p=pu(a);parts.push({lotId:"",q:r,pu:p});cost+=r*p}
+  return{parts,cost}}
+const valeurArt=a=>fifo(a.id,Math.max(0,Number(a.qte)||0)).cost;
+const puMoy=a=>Number(a.qte)>0?valeurArt(a)/Number(a.qte):pu(a);
+const coutFifo=(aid,q)=>art(aid)?fifo(aid,q).cost:0;
+function opsEntree(a,q,puU,x={}){const lid=x.lotId||uid();puU=Number(puU)||0;
+  const m=mvt(a,q,x.motif||"achat",{cout:x.cout??(puU>0?r2(q*puU):null),projetId:x.projetId,ref:x.ref||lid});m.data.lots=[{lotId:lid,q:r3(q),pu:puU}];
+  const lot={op:"set",c:"lots",id:lid,data:{articleId:a.id,nom:nomArt(a),date:x.date||new Date().toISOString(),qte0:r3(q),reste:r3(q),pu:puU,prixTot:r2(x.cout??q*puU),fournisseur:x.fournisseur??(a.fournisseur||""),facture:x.facture||"",factureId:x.factureId||"",origine:x.origine||"achat",note:x.note||""}};
+  return{ops:[lot,{op:"inc",c:"articles",id:a.id,d:r3(q)},m],undo:[{op:"del",c:"lots",id:lid},{op:"inc",c:"articles",id:a.id,d:-r3(q)},{op:"del",c:"mouvements",id:m.id}],mvtId:m.id,lotId:lid}}
+function opsSortie(a,q,motif,x={}){const f=fifo(a.id,q),m=mvt(a,-q,motif,{cout:r2(f.cost),projetId:x.projetId,ref:x.ref});m.data.lots=f.parts.map(p=>({...p,q:r3(p.q)}));
+  const ops=[{op:"inc",c:"articles",id:a.id,d:-r3(q)},...f.parts.filter(p=>p.lotId).map(p=>({op:"incf",c:"lots",id:p.lotId,f:"reste",d:-r3(p.q)})),m];
+  return{ops,undo:[...opsRetour(a,f.parts),{op:"del",c:"mouvements",id:m.id}],cost:f.cost,parts:f.parts.map(p=>({...p,q:r3(p.q)})),mvtId:m.id}}
+function opsRetour(a,parts){const ops=[];let tot=0;
+  (parts||[]).forEach(p=>{const q=Number(p.q)||0;if(!(q>0))return;tot+=q;
+    if(p.lotId&&S.lots.some(l=>l.id===p.lotId))ops.push({op:"incf",c:"lots",id:p.lotId,f:"reste",d:r3(q)});
+    else{const pp=Number(p.pu)||pu(a);ops.push({op:"set",c:"lots",id:uid(),data:{articleId:a.id,nom:nomArt(a),date:new Date().toISOString(),qte0:r3(q),reste:r3(q),pu:pp,prixTot:r2(q*pp),fournisseur:"",facture:"",origine:"retour",note:""}})}});
+  if(tot)ops.push({op:"inc",c:"articles",id:a.id,d:r3(tot)});return ops}
+async function lots_batch(ops){for(let i=0;i<ops.length;i+=450)await store.batch(ops.slice(i,i+450))}
+let migrOK=false;
+async function migrerLots(){if(migrOK||!store)return;migrOK=true;
+  const ops=S.articles.filter(a=>Number(a.qte)>0&&!S.lots.some(l=>l.articleId===a.id)).map(a=>({op:"set",c:"lots",id:"init_"+a.id,data:{articleId:a.id,nom:nomArt(a),date:"2000-01-01T00:00:00.000Z",qte0:r3(a.qte),reste:r3(a.qte),pu:pu(a),prixTot:r2(Number(a.qte)*pu(a)),fournisseur:a.fournisseur||"",facture:"",origine:"initial",note:""}}));
+  if(ops.length)try{await lots_batch(ops)}catch(e){migrOK=false}}
+function blocLots(a){const L=S.lots.filter(l=>l.articleId===a.id).sort((x,y)=>(y.date||"").localeCompare(x.date||""));const act=L.filter(l=>Number(l.reste)>1e-9),fin=L.filter(l=>!(Number(l.reste)>1e-9));
+  return`<details class="bloc" open><summary>Lots en stock (${act.length}) · valeur ${eur(valeurArt(a))}</summary><div style="margin-top:.4rem">${act.length?act.map(l=>ligneLot(a,l)).join(""):`<p class="sub">Aucun lot en stock.</p>`}
+  ${fin.length?`<details style="margin-top:.4rem"><summary class="sub">Lots épuisés (${fin.length})</summary>${fin.slice(0,20).map(l=>ligneLot(a,l)).join("")}</details>`:""}
+  <p class="sub" style="margin:.4rem 0 0">Chaque achat garde son prix. Les lots les plus anciens partent en premier. Corriger le prix d'un lot ne change pas les fabrications déjà enregistrées.</p></div></details>`}
+function ligneLot(a,l){const c=cfg(a),L=lotQ(a);
+  return`<div class="mv" style="grid-template-columns:4.6rem 1fr auto auto"><span class="mv-d">${l.origine==="initial"?"existant":new Date(l.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"})}</span><span class="mv-n">${fmt(l.reste)} / ${fmt(l.qte0)} ${esc(a.unite)}<small>${[l.fournisseur,l.facture&&"facture "+l.facture,ORIG_LOT[l.origine]].filter(Boolean).map(esc).join(" · ")||"fournisseur non renseigné"}</small></span><span class="mv-c num">${Number(l.pu)>0?eur(l.pu*L)+" / "+c.lotNom:"prix ?"}</span><button type="button" class="btn ghost sm" onclick="editLot('${l.id}')">Modifier</button></div>`}
+function editLot(lid){const l=S.lots.find(x=>x.id===lid),a=l&&art(l.articleId);if(!a)return;
+  const vb=$("#viewerBody");
+  vb.innerHTML=`<h2>Lot de ${esc(nomArt(a))}</h2><p class="sub" style="margin:0">Reçu : ${fmt(l.qte0)} ${esc(a.unite)}, reste ${fmt(l.reste)} ${esc(a.unite)}.</p>
+  <div class="grid2"><label>Prix payé pour ce lot (€)<input id="lo_p" type="text" inputmode="decimal" value="${vIn(r2((Number(l.pu)||0)*Number(l.qte0)))}"></label>
+  <label>Date d'achat<input id="lo_d" type="date" value="${l.origine==="initial"?"":esc((l.date||"").slice(0,10))}"></label>
+  <label>Fournisseur<input id="lo_f" value="${esc(l.fournisseur)}"></label><label>N° de facture<input id="lo_r" value="${esc(l.facture)}"></label></div>
+  <p class="sub" style="margin:0">Mets le prix total réellement payé, frais de port compris.</p>
+  <div class="actions"><span class="spacer"></span><button class="btn ghost" onclick="viewer.close()">Annuler</button><button class="btn" onclick="okLot('${lid}')">Enregistrer</button></div>`;
+  if(!viewer.open)viewer.showModal()}
+async function okLot(lid){const l=S.lots.find(x=>x.id===lid);if(!l)return;const p=num("lo_p"),d=val("lo_d");
+  const f={pu:Number(l.qte0)>0?p/Number(l.qte0):0,prixTot:r2(p),fournisseur:val("lo_f"),facture:val("lo_r")};if(d)f.date=new Date(d+"T12:00:00").toISOString();
+  viewer._sale=false;viewer.close();await upd("lots",lid,f);toast("Lot mis à jour");setTimeout(()=>{if(dlg.open&&window._art?.id===l.articleId)editArticle(l.articleId)},200)}
+function blocPerte(a){return`<details class="bloc"><summary>Déclarer une perte (impression ratée, casse, péremption)</summary>
+  <div class="grid2" style="margin-top:.6rem"><label><span>Quantité perdue (${esc(a.unite)})</span><input id="pe_q" type="text" inputmode="decimal"></label>
+  <label>Motif<select id="pe_m"><option value="rebut">Impression ratée</option><option value="perte">Casse, perte, périmé</option></select></label>
+  <label style="grid-column:1/-1">Pour le projet<select id="pe_p">${optProjets()}</select></label></div>
+  <p class="sub" style="margin:.4rem 0">Pour un leurre raté pendant une production, déclare-le plutôt dans la production : le coût reste rattaché au lot.</p>
+  <button type="button" class="btn ghost sm" onclick="declarerPerte('${a.id}')">Retirer du stock</button></details>`}
+async function declarerPerte(id){const a=art(id);if(!a)return;const q=num("pe_q");if(!(q>0)){toast("Indique la quantité perdue");return}
+  if(q>(Number(a.qte)||0)){toast("Plus que le stock disponible");return}
+  const s=opsSortie(a,q,val("pe_m"),{projetId:val("pe_p")});dlg._sale=false;dlg.close();
+  await lancer(s.ops,"Perte enregistrée : − "+fmt(q)+" "+a.unite+" ("+eur(s.cost)+")",s.undo)}
+
+/* ---------- Production : un plateau = un lot ---------- */
+const filsDe=l=>(l?.bom||[]).filter(b=>art(b.articleId)?.categorie==="Filament"&&pnum(b.qte)>0);
+const autresDe=l=>(l?.bom||[]).filter(b=>art(b.articleId)&&art(b.articleId).categorie!=="Filament"&&pnum(b.qte)>0);
+const colorisDe=l=>[...new Set([...(l?.coloris||[]),...S.fabrications.filter(f=>f.leurreId===l?.id&&f.coloris).map(f=>f.coloris)])];
+function nouveauLot(){const d=new Date(),p="L"+String(d.getFullYear()).slice(2)+String(d.getMonth()+1).padStart(2,"0")+String(d.getDate()).padStart(2,"0")+"-";
+  const ex=new Set(S.fabrications.map(f=>f.lot).filter(Boolean));let i=1;while(ex.has(p+String(i).padStart(2,"0")))i++;return p+String(i).padStart(2,"0")}
+const lotDe=f=>f.lot||("L"+(f.date||"").slice(2,10).replace(/-/g,"")+"-"+String(f.id).slice(-3).toUpperCase());
+const cuFab=f=>f.coutUnit!=null?Number(f.coutUnit):(Number(f.n)>0?(Number(f.cout)||0)/Number(f.n):0);
+let prodTmp=null;
+function editProduction(lid){
+  prodTmp={lot:nouveauLot(),lignes:[{leurreId:lid||"",coloris:"",n:"1",bonnes:"1"}],g:"",h:"",purge:vIn(REG().purgeG),ratee:false,pct:"50",projetId:"",reel:{},gcode:""};
+  dessinerProd();dlg.showModal()}
+function dessinerProd(){const P=prodTmp,L=[...S.leurres].sort((a,b)=>(a.nom+a.version).localeCompare(b.nom+b.version));
+  body.innerHTML=`<h2>Production ${esc(P.lot)}</h2>
+  <p class="sub" style="margin:0">Un plateau d'impression = un lot. Mets sur le même plateau autant de leurres que tu veux. Le numéro de lot sert à la traçabilité : note-le sur le leurre ou son sachet.</p>
+  <div><h3 style="margin-bottom:.4rem">Leurres sur le plateau</h3><div id="pl" style="display:flex;flex-direction:column;gap:.5rem">${P.lignes.map((x,i)=>{const l=S.leurres.find(y=>y.id===x.leurreId);return`<div class="bloc" style="display:flex;flex-direction:column;gap:.4rem">
+    <div class="bomline" style="flex-wrap:wrap"><select style="flex:2 1 11rem" aria-label="Leurre" onchange="prodTmp.lignes[${i}].leurreId=this.value;dessinerProd()"><option value="">Choisir un leurre</option>${L.map(y=>`<option value="${y.id}" ${y.id===x.leurreId?"selected":""}>${esc(y.nom)} ${esc(y.version||"")}</option>`).join("")}</select>
+    <input list="dlc${i}" style="flex:1 1 7rem;width:auto" placeholder="Coloris" value="${esc(x.coloris)}" oninput="prodTmp.lignes[${i}].coloris=this.value" aria-label="Coloris"><datalist id="dlc${i}">${colorisDe(l).map(c=>`<option value="${esc(c)}">`).join("")}</datalist>
+    ${P.lignes.length>1?`<button class="x" aria-label="Retirer" onclick="prodTmp.lignes.splice(${i},1);dessinerProd()">×</button>`:""}</div>
+    <div class="grid2"><label>Imprimés<input type="text" inputmode="numeric" value="${esc(x.n)}" oninput="prodTmp.lignes[${i}].n=this.value;if(!prodTmp.lignes[${i}]._b){prodTmp.lignes[${i}].bonnes=this.value;const e=document.getElementById('pb${i}');if(e)e.value=this.value}majProd(true)"></label>
+    <label>Réussis<input id="pb${i}" type="text" inputmode="numeric" value="${esc(x.bonnes)}" ${P.ratee?"disabled":""} oninput="prodTmp.lignes[${i}].bonnes=this.value;prodTmp.lignes[${i}]._b=1;majProd(true)"></label></div></div>`}).join("")}</div>
+  <button class="btn ghost sm" style="margin-top:.5rem" onclick="prodTmp.lignes.push({leurreId:'',coloris:'',n:'1',bonnes:'1'});dessinerProd()">Ajouter un leurre au plateau</button></div>
+  <div class="bloc-in"><h3 style="margin-bottom:.4rem">Impression</h3>
+  <div class="grid2"><label>Filament du plateau (g)<input id="pr_g" type="text" inputmode="decimal" value="${esc(P.g)}" oninput="prodTmp.g=this.value;majProd()"></label>
+  <label>Durée (h)<input id="pr_h" type="text" inputmode="decimal" value="${esc(P.h)}" oninput="prodTmp.h=this.value;majProd()"></label>
+  <label>Purge machine (g)<input id="pr_pu" type="text" inputmode="decimal" value="${esc(P.purge)}" oninput="prodTmp.purge=this.value;majProd()"></label>
+  <label>Depuis le slicer<span class="btn ghost sm" style="text-align:center;cursor:pointer;position:relative">G-code du plateau<input type="file" accept=".gcode,.gco,.g,.bgcode" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="gcodeProd(this.files[0])"></span></label></div>
+  <p class="sub" id="pr_gc" style="margin:.3rem 0 0">${P.gcode?esc(P.gcode):"Vide = calculé depuis les nomenclatures. Le G-code du plateau entier est plus juste. La purge (démarrage, changements de couleur) n'est pas toujours comptée par le slicer : pèse-la une fois pour régler la valeur par défaut dans les réglages."}</p>
+  <label style="flex-direction:row;align-items:center;gap:.5rem;color:var(--ink);margin-top:.5rem"><input type="checkbox" ${P.ratee?"checked":""} onchange="prodTmp.ratee=this.checked;dessinerProd()">Impression ratée</label>
+  ${P.ratee?`<label style="max-width:16rem">Imprimé avant l'arrêt (%)<input type="text" inputmode="decimal" value="${esc(P.pct)}" oninput="prodTmp.pct=this.value;majProd()"></label><p class="sub" style="margin:0">Seuls le filament et l'électricité consommés sont déduits. Aucune pièce n'entre en stock.</p>`:""}</div>
+  ${P.ratee?"":`<details class="bloc" id="pr_rec" ${Object.keys(P.reel).length?"open":""}><summary>Carnet de recettes : quantités réellement utilisées</summary><div id="pr_recin" style="margin-top:.5rem"></div></details>`}
+  <label>Projet<select onchange="prodTmp.projetId=this.value">${optProjets(P.projetId)}</select></label>
+  <div class="recap" id="pr_recap"></div>
+  <div class="actions"><span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" onclick="validerProd()">${P.ratee?"Enregistrer l'échec":"Valider la production"}</button></div>`;
+  majProd(true)}
+function calcProd(){const P=prodTmp,R=REG(),ratee=P.ratee,k0=ratee?Math.min(100,Math.max(0,pnum(P.pct)))/100:1;
+  const lig=P.lignes.map((x,i)=>{const l=S.leurres.find(y=>y.id===x.leurreId),n=Math.max(0,Math.round(pnum(x.n))),b=ratee?0:Math.min(n,Math.max(0,Math.round(pnum(x.bonnes))));
+    return{i,x,l,n,b,theoG:filsDe(l).reduce((s,f)=>s+pnum(f.qte)*n,0),theoH:pnum(l?.impH)*n}}).filter(z=>z.l&&z.n>0);
+  const theoG=lig.reduce((s,z)=>s+z.theoG,0),G=pnum(P.g)>0?pnum(P.g):theoG,k=theoG>0?G/theoG:1,H=(pnum(P.h)>0?pnum(P.h):lig.reduce((s,z)=>s+z.theoH,0))*k0,purge=pnum(P.purge);
+  const conso={};const add=(aid,q,i)=>{if(!(q>0))return;(conso[aid]??={tot:0,par:{}});conso[aid].tot+=q;conso[aid].par[i]=(conso[aid].par[i]||0)+q};
+  lig.forEach(z=>filsDe(z.l).forEach(f=>add(f.articleId,pnum(f.qte)*z.n*k*k0,z.i)));
+  const filTot=Object.values(conso).reduce((s,c)=>s+c.tot,0);
+  if(purge>0&&filTot>0)Object.entries(conso).map(([aid,c])=>[aid,c.tot,{...c.par}]).forEach(([aid,t,par])=>{const part=purge*t/filTot;Object.entries(par).forEach(([i,q])=>add(aid,part*q/t,+i))});
+  const recette=[];
+  lig.forEach(z=>{filsDe(z.l).forEach(f=>{if(!ratee&&z.n)recette.push({i:z.i,articleId:f.articleId,theoU:pnum(f.qte),reelU:r3(pnum(f.qte)*k),fil:true})});
+    if(z.b>0)autresDe(z.l).forEach(b=>{const key=z.i+"|"+b.articleId,theo=pnum(b.qte)*z.b,reel=P.reel[key]!=null&&String(P.reel[key]).trim()!==""?pnum(P.reel[key]):theo;add(b.articleId,reel,z.i);recette.push({i:z.i,articleId:b.articleId,theoU:pnum(b.qte),reelU:r3(reel/z.b),theo,reel,key})})});
+  const plan={};Object.entries(conso).forEach(([aid,c])=>{plan[aid]={...c,...fifo(aid,c.tot)}});
+  const W=wattsMat(lig.map(z=>matiereImp(z.l)).find(Boolean)||""),energie=H*(W/1000)*R.kwh+H*R.usure;
+  const poids=lig.map(z=>z.theoG||z.n),pt=poids.reduce((s,v)=>s+v,0)||1;
+  lig.forEach((z,j)=>{z.energie=energie*poids[j]/pt;z.mat=Object.values(plan).reduce((s,p)=>s+(p.par[z.i]?p.cost*p.par[z.i]/p.tot:0),0);
+    z.mo=z.b*coutMO(z.l)+z.b*coutEmb();z.total=z.mat+z.energie+z.mo;z.cu=z.b>0?z.total/z.b:0;z.rebut=z.b>0?0:z.mat+z.energie});
+  const manque=Object.entries(plan).filter(([aid,p])=>(Number(art(aid)?.qte)||0)+1e-9<p.tot).map(([aid])=>nomArt(art(aid)));
+  return{lig,G:G*k0,H,purge,plan,energie,recette,manque,ratee}}
+function majProd(recette){const c=calcProd(),z=$("#pr_recap");if(!z)return;
+  if($("#pr_g")&&!prodTmp.g)$("#pr_g").placeholder=vIn(r2(c.lig.reduce((s,y)=>s+y.theoG,0)));
+  if($("#pr_h")&&!prodTmp.h)$("#pr_h").placeholder=vIn(r2(c.lig.reduce((s,y)=>s+y.theoH,0)));
+  if(recette&&$("#pr_recin")){const R=c.recette.filter(r=>!r.fil);
+    $("#pr_recin").innerHTML=R.length?`<p class="sub" style="margin:0 0 .4rem">Prérempli avec la nomenclature. Corrige avec ce que tu as vraiment utilisé : c'est ce qui sort du stock, et la fiche du leurre garde la moyenne.</p>`+R.map(r=>{const a=art(r.articleId),l=c.lig.find(y=>y.i===r.i).l;return`<div class="mv" style="grid-template-columns:1fr 6.5rem"><span class="mv-n">${esc(nomArt(a))}<small>${esc(l.nom)}${prodTmp.lignes[r.i].coloris?" "+esc(prodTmp.lignes[r.i].coloris):""} : prévu ${fmt(r.theo)} ${esc(a.unite)}</small></span><input type="text" inputmode="decimal" placeholder="${vIn(r3(r.theo))}" value="${esc(prodTmp.reel[r.key]??"")}" oninput="prodTmp.reel['${r.key}']=this.value;majProd()" aria-label="Quantité réelle ${esc(nomArt(a))}"></div>`}).join(""):`<p class="sub" style="margin:0">Aucun composant hors filament dans les nomenclatures.</p>`}
+  const tot=c.lig.reduce((s,y)=>s+y.total,0),reb=c.lig.reduce((s,y)=>s+y.rebut,0);
+  z.innerHTML=c.lig.length?`${c.lig.map(y=>`<div class="mv"><span class="mv-n">${esc(y.l.nom)} ${esc(y.l.version||"")}${prodTmp.lignes[y.i].coloris?" · "+esc(prodTmp.lignes[y.i].coloris):""}<small>${c.ratee?"raté":y.b+" réussi"+(y.b>1?"s":"")+" sur "+y.n}${y.b>0?", "+eur(y.cu)+" pièce":""}</small></span><span class="mv-c num">${eur(y.total)}</span></div>`).join("")}
+    <div class="mv"><span class="mv-n">Filament<small>${fmt(c.G,1)} g imprimés + ${fmt(c.purge,1)} g de purge, ${fmt(c.H)} h</small></span><span class="mv-c num">${eur(Object.entries(c.plan).filter(([aid])=>art(aid)?.categorie==="Filament").reduce((s,[,p])=>s+p.cost,0))}</span></div>
+    <div class="mv"><span class="mv-n">Électricité et usure</span><span class="mv-c num">${eur(c.energie)}</span></div>
+    ${reb>0?`<div class="mv"><span class="mv-n st-crit">Perte (pièces ratées)</span><span class="mv-c num st-crit">${eur(reb)}</span></div>`:""}
+    <div class="mv"><span class="mv-n"><b>Total du lot</b></span><span class="mv-c num"><b>${eur(tot)}</b></span></div>
+    ${c.manque.length?`<p class="sub st-crit" style="margin:.4rem 0">${ICO_NIV.crit} Stock insuffisant : ${c.manque.map(esc).join(", ")}</p>`:""}`:`<p class="sub">Choisis au moins un leurre.</p>`}
+async function gcodeProd(f){if(!f)return;const r=await lireGcode(f);
+  if(!r.g&&!r.h){$("#pr_gc").textContent="Aucune information de poids ou de temps dans ce fichier.";return}
+  if(r.g)prodTmp.g=vIn(r.g);if(r.h)prodTmp.h=vIn(r.h);prodTmp.gcode=`G-code « ${f.name} » : ${r.g?fmt(r.g,1)+" g":""}${r.g&&r.h?", ":""}${r.h?fmt(r.h)+" h":""}. Réparti entre les leurres au prorata de leur nomenclature.`;dessinerProd()}
+async function validerProd(){const c=calcProd(),P=prodTmp;
+  if(!c.lig.length){toast("Choisis au moins un leurre");return}
+  if(c.manque.length&&!confirm("Stock insuffisant pour : "+c.manque.join(", ")+". Enregistrer quand même ? Le manque sera compté au dernier prix connu."))return;
+  const prodId=uid(),date=new Date().toISOString(),ops=[],sorties=[],mvtIds=[];
+  Object.entries(c.plan).forEach(([aid,p])=>{const a=art(aid);if(!a)return;const s=opsSortie(a,p.tot,c.ratee?"rebut":"fabrication",{ref:prodId,projetId:P.projetId});ops.push(...s.ops);sorties.push({articleId:aid,parts:s.parts});mvtIds.push(s.mvtId)});
+  c.lig.forEach((y,j)=>{const id=uid(),conso=Object.entries(c.plan).filter(([,p])=>p.par[y.i]).map(([aid,p])=>({articleId:aid,nom:nomArt(art(aid)),qte:r3(p.par[y.i]),unite:art(aid)?.unite||"",cout:r2(p.cost*p.par[y.i]/p.tot)}));
+    ops.push({op:"set",c:"fabrications",id,data:{prodId,lot:P.lot,date,leurreId:y.l.id,nom:y.l.nom,version:y.l.version||"",coloris:(P.lignes[y.i].coloris||"").trim(),n:y.b,lancees:y.n,ratee:c.ratee,pct:c.ratee?pnum(P.pct):100,projetId:P.projetId,
+      cout:r2(y.total),coutUnit:y.b>0?r2(y.cu):null,coutImp:r2(y.energie),coutRebut:r2(y.rebut),conso,recette:c.recette.filter(r=>r.i===y.i).map(r=>({articleId:r.articleId,nom:nomArt(art(r.articleId)),unite:art(r.articleId)?.unite||"",theoU:r.theoU,reelU:r.reelU,fil:!!r.fil})),
+      plateau:{g:r2(c.G),h:r2(c.H),purge:r2(c.purge),gcode:!!pnum(P.g)},principal:j===0,sorties:j===0?sorties:[],mvtIds:j===0?mvtIds:[]}})});
+  dlg._sale=false;dlg.close();
+  try{await lots_batch(ops);const nb=c.lig.reduce((s,y)=>s+y.b,0);toast(c.ratee?"Échec enregistré, matière déduite":`Lot ${P.lot} : ${nb} leurre${nb>1?"s":""} en stock`)}catch(e){toast("Échec, rien n'a été modifié ("+(e.code||"erreur")+")")}}
+async function lireGcode(f){const tete=await f.slice(0,300000).text(),queue=f.size>300000?await f.slice(Math.max(0,f.size-300000)).text():"",t=tete+"\n"+queue;
+  let g=0,h=0,mm=0,r=t.match(/;\s*(?:total )?filament used \[g\]\s*[=:]\s*([\d.,\s]+)/i)||t.match(/;\s*total filament weight(?: \[g\])?\s*[=:]\s*([\d.]+)/i);
+  if(r)g=r[1].split(",").map(Number).filter(isFinite).reduce((a,b)=>a+b,0);
+  if(!g&&(r=t.match(/;\s*Filament used:\s*([\d.]+)\s*m/i)))mm=parseFloat(r[1])*1000;
+  if(!g&&(r=t.match(/;\s*filament used \[mm\]\s*=\s*([\d.,\s]+)/i)))mm=r[1].split(",").map(Number).filter(isFinite).reduce((a,b)=>a+b,0);
+  const tps=t.match(/;\s*(?:estimated printing time(?: \(normal mode\))?|total estimated time|model printing time)\s*[=:]\s*([^\n;]+)/i);
+  if(tps){const x=tps[1];const v=k=>{const m=x.match(new RegExp("(\\d+)\\s*"+k));return m?+m[1]:0};h=v("d")*24+v("h")+v("m")/60+v("s")/3600}
+  if(!h&&(r=t.match(/;TIME:(\d+)/)))h=+r[1]/3600;
+  if(!g&&mm)g=mm/10*Math.PI*0.0875*0.0875*1.2;
+  return{g:Math.round(g*10)/10,h:Math.round(h*100)/100}}
+function groupesProd(){const m={};S.fabrications.forEach(f=>{const k=f.prodId||f.id;(m[k]??=[]).push(f)});return Object.entries(m).map(([k,fs])=>({k,fs,date:fs[0].date||"",lot:lotDe(fs[0])})).sort((a,b)=>b.date.localeCompare(a.date))}
+async function annulerProd(k){const fs=S.fabrications.filter(f=>(f.prodId||f.id)===k);if(!fs.length)return;
+  for(const f of fs)if(Number(f.n)>0&&dispoC(f.leurreId,f.coloris)<Number(f.n)){toast(`Impossible : des leurres du lot ${lotDe(f)} sont déjà vendus ou sortis`);return}
+  if(!confirm(`Annuler la production ${lotDe(fs[0])} ? La matière est remise en stock et les leurres retirés.`))return;
+  const ops=[],pr=fs.find(f=>f.principal);
+  if(pr)(pr.sorties||[]).forEach(s=>{const a=art(s.articleId);if(a)ops.push(...opsRetour(a,s.parts))});
+  else fs.forEach(f=>(f.conso||[]).forEach(c=>{const a=art(c.articleId);if(a)ops.push(...opsRetour(a,[{lotId:"",q:c.qte,pu:pu(a)}]))}));
+  fs.forEach(f=>{(f.mvtIds||[]).forEach(m=>ops.push({op:"del",c:"mouvements",id:m}));ops.push({op:"del",c:"fabrications",id:f.id})});
+  try{await lots_batch(ops);toast("Production annulée, matière remise en stock")}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
+function ouvrirProd(id){const l=S.leurres.find(x=>x.id===id);
+  const norm=x=>JSON.stringify((x||[]).filter(b=>b.articleId).map(b=>[b.articleId,pnum(b.qte)]));
+  if(l&&norm(tmpBom)!==norm(l.bom)){toast("La nomenclature a changé : enregistre la fiche avant de produire");return}
+  dlg._sale=false;dlg.close();editProduction(id)}
+function blocRecette(l){const fs=S.fabrications.filter(f=>f.leurreId===l.id&&(f.recette||[]).length&&Number(f.lancees||f.n)>0).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  if(!fs.length)return`<details class="bloc"><summary>Carnet de recettes</summary><p class="sub">Aucune mesure. À chaque production, note les quantités réellement utilisées : l'app calcule la moyenne par leurre et te propose d'ajuster la nomenclature.</p></details>`;
+  const per={};fs.forEach(f=>f.recette.forEach(r=>{(per[r.articleId]??={nom:r.nom,unite:r.unite,v:[]}).v.push({u:Number(r.reelU)||0,lot:lotDe(f)})}));
+  return`<details class="bloc"><summary>Carnet de recettes (${fs.length} lot${fs.length>1?"s":""})</summary><div style="margin-top:.4rem">${Object.entries(per).map(([aid,p])=>{const moy=p.v.reduce((s,x)=>s+x.u,0)/p.v.length,b=tmpBom.find(x=>x.articleId===aid),th=b?pnum(b.qte):0,ec=th>0?(moy-th)/th*100:null,k=ec===null?"":Math.abs(ec)<=5?"ok":Math.abs(ec)<=15?"warn":"crit";
+    return`<div class="mv" style="grid-template-columns:1fr auto auto"><span class="mv-n">${esc(p.nom)}<small>moyenne réelle ${fmt(moy,2)} ${esc(p.unite)} sur ${p.v.length} lot${p.v.length>1?"s":""} · nomenclature ${b?fmt(th,2)+" "+esc(p.unite):"absent"} · derniers : ${p.v.slice(0,3).map(x=>fmt(x.u,2)).join(", ")}</small></span><span class="mv-q ${k?"st-"+k:""}">${ec===null?"":(ec>0?"+":"")+fmt(ec,0)+" %"}</span>${b&&Math.abs(moy-th)>1e-6?`<button type="button" class="btn ghost sm" onclick="appliquerMoy('${aid}',${r3(moy)})">Appliquer</button>`:"<span></span>"}</div>`}).join("")}
+  <p class="sub" style="margin:.4rem 0 0">Par leurre. Filament : poids réel du plateau (G-code) réparti, hors purge. « Appliquer » met la moyenne dans la nomenclature : enregistre la fiche ensuite.</p></div></details>`}
+function appliquerMoy(aid,q){tmpBom.forEach(b=>{if(b.articleId===aid)b.qte=vIn(q)});drawBom();dlg._sale=true;toast("Nomenclature ajustée : pense à enregistrer")}
+
+/* ---------- Produits finis : par coloris et par lot, sortie des plus anciens d'abord ---------- */
+const MOTIFS_SORTIE={perso:"Gardé pour moi",cadeau:"Offert",perdu:"Perdu ou cassé",test:"Échantillon / test",inventaire:"Correction d'inventaire"};
+function restesFab(lid,col,exclu){col=col||"";
+  const fabs=S.fabrications.filter(f=>f.leurreId===lid&&(f.coloris||"")===col&&Number(f.n)>0).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+  const rem=Object.fromEntries(fabs.map(f=>[f.id,Number(f.n)||0]));let libre=0;
+  const outs=[...S.ventes.filter(v=>!(exclu&&exclu.c==="ventes"&&exclu.id===v.id)&&v.leurreId===lid&&(v.coloris||"")===col).map(v=>({q:Number(v.qte)||0,alloc:v.alloc})),
+    ...S.sorties.filter(x=>!(exclu&&exclu.c==="sorties"&&exclu.id===x.id)&&x.leurreId===lid&&(x.coloris||"")===col).map(x=>({q:Number(x.n)||0,alloc:x.alloc}))];
+  outs.forEach(o=>{if(o.alloc?.length)o.alloc.forEach(a=>{if(rem[a.fabId]!=null)rem[a.fabId]-=a.q;else libre+=a.q});else libre+=o.q});
+  if(libre<0&&fabs.length)rem[fabs[fabs.length-1].id]-=libre;
+  else for(const f of fabs){if(libre<=0)break;const t=Math.min(libre,Math.max(0,rem[f.id]));rem[f.id]-=t;libre-=t}
+  return{lots:fabs.map(f=>({f,reste:rem[f.id]})),depasse:Math.max(0,libre)}}
+const dispoC=(lid,col)=>{const r=restesFab(lid,col);return r.lots.reduce((s,x)=>s+x.reste,0)-r.depasse};
+const clesStock=lid=>{const s=new Set(S.fabrications.filter(f=>f.leurreId===lid&&Number(f.n)>0).map(f=>f.coloris||""));S.ventes.filter(v=>v.leurreId===lid).forEach(v=>s.add(v.coloris||""));S.sorties.filter(x=>x.leurreId===lid).forEach(x=>s.add(x.coloris||""));return[...s].sort()};
+function allocFifo(lid,col,q,exclu){const r=restesFab(lid,col,exclu),alloc=[];let rest=q,cost=0;
+  for(const x of r.lots){if(rest<=0)break;const t=Math.min(rest,Math.max(0,x.reste));if(t>0){alloc.push({fabId:x.f.id,lot:lotDe(x.f),q:t});cost+=t*cuFab(x.f);rest-=t}}
+  if(rest>0){const l=S.leurres.find(y=>y.id===lid);cost+=rest*(l?coutLeurre(l):0)}
+  return{alloc,cu:q>0?cost/q:0,manque:rest}}
+const valeurFinis=lid=>clesStock(lid).reduce((s,c)=>s+restesFab(lid,c).lots.reduce((t,x)=>t+Math.max(0,x.reste)*cuFab(x.f),0),0);
+const derniereFab=id=>S.fabrications.filter(f=>f.leurreId===id&&Number(f.n)>0).map(f=>f.date||"").sort().pop()||"";
+function vFinis(){
+  const L=S.leurres.filter(l=>fabTot(l.id)>0).map(l=>({l,d:dispo(l.id),v:valeurFinis(l.id),pv:Number(l.prixVente)||0}));
+  const enStock=L.filter(x=>x.d>0).sort((a,b)=>derniereFab(b.l.id).localeCompare(derniereFab(a.l.id))),vides=L.filter(x=>x.d<=0);
+  const n=enStock.reduce((s,x)=>s+x.d,0),vc=enStock.reduce((s,x)=>s+x.v,0),vv=enStock.reduce((s,x)=>s+x.d*x.pv,0),sansPrix=enStock.filter(x=>!x.pv).length;
+  const ligne=x=>{const cs=clesStock(x.l.id).map(c=>({c,r:restesFab(x.l.id,c)})).map(o=>({...o,d:o.r.lots.reduce((s,y)=>s+y.reste,0)-o.r.depasse})).filter(o=>o.d!==0);
+    return`<div class="row click" role="button" tabindex="0" onclick="ficheProduit('${x.l.id}')" onkeydown="if(event.key==='Enter')ficheProduit('${x.l.id}')"><div class="grow"><h3>${esc(x.l.nom)} <span class="pill">${esc(x.l.version||"V1")}</span></h3>
+    ${cs.some(o=>o.c)?`<div class="chips" style="margin:.3rem 0">${cs.map(o=>`<span class="pill ${o.d<0?"alert":""}">${esc(o.c||"sans coloris")} : ${o.d}</span>`).join("")}</div>`:""}
+    <div class="sub">${fabTot(x.l.id)} fabriqué${fabTot(x.l.id)>1?"s":""}, ${venduTot(x.l.id)} vendu${venduTot(x.l.id)>1?"s":""}${sortiTot(x.l.id)?", "+sortiTot(x.l.id)+" sorti"+(sortiTot(x.l.id)>1?"s":"")+" hors vente":""} · dernier lot ${derniereFab(x.l.id)?new Date(derniereFab(x.l.id)).toLocaleDateString("fr-FR"):"—"}</div>
+    <div class="sub">Valeur ${eur(x.v)} au coût réel${x.pv?" · prix "+eur(x.pv):" · prix de vente non fixé"}</div></div>
+    <div style="text-align:center;min-width:4.5rem"><span class="num pill ${x.d>0?"ok":""}" style="font-size:1rem">${Math.max(0,x.d)}</span><div class="sub" style="font-size:.75rem">en stock</div></div></div>`};
+  return head("Stock",`<button class="btn" onclick="editProduction()">Nouvelle production</button>`)+ongletsStock()+
+  `<div class="kpis kpis3" style="margin-top:.75rem"><div class="kpi"><strong class="num">${n}</strong><span>leurre${n>1?"s":""} prêt${n>1?"s":""} à vendre</span></div><div class="kpi"><strong class="num">${eur(vc)}</strong><span>valeur au coût réel</span></div><div class="kpi"><strong class="num">${eur(vv)}</strong><span>valeur au prix de vente${sansPrix?` (${sansPrix} sans prix)`:""}</span></div></div>
+  <section class="block"><h2>En stock</h2><div class="list">${enStock.length?enStock.map(ligne).join(""):`<div class="empty">Aucun leurre fini en stock. Lance une production : les pièces réussies arrivent ici.</div>`}</div></section>
+  ${vides.length?`<details class="bloc"><summary>Épuisés (${vides.length})</summary><div class="list" style="margin-top:.6rem">${vides.map(ligne).join("")}</div></details>`:""}
+  <p class="sub">Stock fini = fabriqués − vendus − sortis hors vente. Chaque pièce garde le coût réel de son lot ; les ventes prennent les lots les plus anciens en premier.</p>`;
+}
+function ficheProduit(id){
+  const l=S.leurres.find(x=>x.id===id);if(!l)return;const d=dispo(id);
+  const cles=clesStock(id),blocs=cles.map(c=>{const r=restesFab(id,c),n=r.lots.reduce((s,x)=>s+x.reste,0)-r.depasse;return{c,n,lots:r.lots.filter(x=>x.reste!==0)}});
+  const ev=[...S.fabrications.filter(f=>f.leurreId===id).map(f=>({date:f.date,t:(f.ratee?"Raté":"Fabriqué")+(f.coloris?" · "+f.coloris:"")+" · lot "+lotDe(f),q:+f.n,s:f.ratee?"perte "+eur(f.cout):eur(f.cout)})),
+    ...S.ventes.filter(v=>v.leurreId===id).map(v=>({date:v.date,t:"Vendu"+(v.coloris?" · "+v.coloris:"")+", "+v.canal+(v.client?", "+v.client:"")+((v.alloc||[]).length?" · lot "+v.alloc.map(a=>a.lot).join(", "):""),q:-v.qte,s:eur((Number(v.prixUnit)||0)*v.qte)})),
+    ...S.sorties.filter(x=>x.leurreId===id).map(x=>({date:x.date,t:(MOTIFS_SORTIE[x.motif]||x.motif)+(x.coloris?" · "+x.coloris:"")+(x.note?", "+x.note:""),q:-x.n,s:"",sid:x.id}))].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const vb=$("#viewerBody");
+  vb.innerHTML=`<h2>${esc(l.nom)} <span class="pill">${esc(l.version||"V1")}</span></h2>
+  <div class="kpis kpis3" style="margin:0"><div class="kpi"><strong class="num">${Math.max(0,d)}</strong><span>en stock</span></div><div class="kpi"><strong class="num">${fabTot(id)}</strong><span>fabriqués</span></div><div class="kpi"><strong class="num">${venduTot(id)}</strong><span>vendus</span></div></div>
+  <div class="actions" style="justify-content:flex-start"><button class="btn" ${d>0?"":"disabled"} onclick="viewer.close();editVente(null,'${id}')">Vendre</button><button class="btn ghost" ${d>0?"":"disabled"} onclick="editSortie('${id}')">Sortie hors vente</button><button class="btn ghost" onclick="viewer.close();editLeurre('${id}')">Fiche leurre</button></div>
+  <div id="sortieForm"></div>
+  ${blocs.some(b=>b.n)?`<section><h3 style="margin-bottom:.3rem">En stock par coloris et par lot</h3>${blocs.filter(b=>b.n).map(b=>`<div class="mv" style="grid-template-columns:1fr auto"><span class="mv-n"><b>${esc(b.c||"Sans coloris")}</b><small>${b.lots.filter(x=>x.reste>0).map(x=>`lot ${esc(lotDe(x.f))} : ${x.reste} à ${eur(cuFab(x.f))}`).join(" · ")}</small></span><span class="mv-q ${b.n<0?"st-crit":""}">${b.n}</span></div>`).join("")}</section>`:""}
+  <section><h3 style="margin-bottom:.3rem">Historique</h3><div>${ev.length?ev.map(e=>`<div class="mv" style="grid-template-columns:4.6rem 1fr auto auto"><span class="mv-d">${e.date?new Date(e.date).toLocaleDateString("fr-FR"):""}</span><span class="mv-n">${esc(e.t)}${e.s?`<small>${e.s}</small>`:""}</span><span class="mv-q ${e.q>0?"st-ok":""}">${e.q>0?"+":e.q<0?"−":""}${Math.abs(e.q)}</span>${e.sid?`<button class="btn ghost sm" onclick="annulerSortie('${e.sid}')">Annuler</button>`:"<span></span>"}</div>`).join(""):`<p class="sub">Aucun mouvement.</p>`}</div></section>
+  <div class="actions"><button class="btn ghost" onclick="viewer.close()">Fermer</button></div>`;
+  if(!viewer.open)viewer.showModal();
+}
+function editSortie(id){const cs=clesStock(id).filter(c=>dispoC(id,c)>0);
+  $("#sortieForm").innerHTML=`<div class="bloc" style="display:flex;flex-direction:column;gap:.6rem"><b>Sortie hors vente</b><div class="grid2">${cs.length>1||cs[0]?`<label>Coloris<select id="so_c">${cs.map(c=>`<option value="${esc(c)}">${esc(c||"Sans coloris")} (${dispoC(id,c)})</option>`).join("")}</select></label>`:`<input type="hidden" id="so_c" value="">`}<label>Quantité<input id="so_n" type="text" inputmode="numeric" value="1"></label><label>Motif<select id="so_m">${Object.entries(MOTIFS_SORTIE).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select></label></div><label>Note<input id="so_t" type="text" placeholder="Facultatif : à qui, où, pourquoi"></label><div class="actions"><button class="btn ghost sm" onclick="$('#sortieForm').innerHTML=''">Annuler</button><button class="btn sm" onclick="okSortie('${id}')">Enregistrer la sortie</button></div></div>`;
+}
+async function okSortie(id){const col=$("#so_c").value,d=dispoC(id,col);
+  const n=Math.round(num("so_n"));if(!(n>0)){toast("Indique une quantité");return}
+  if(n>d){toast(`Il n'en reste que ${d} en stock`);return}
+  const l=S.leurres.find(x=>x.id===id),a=allocFifo(id,col,n);
+  try{await store.batch([{op:"set",c:"sorties",id:uid(),data:{date:new Date().toISOString(),leurreId:id,nom:l.nom,version:l.version||"",coloris:col,n,motif:val("so_m"),note:val("so_t"),alloc:a.alloc,cout:r2(a.cu*n)}}]);
+    viewer._sale=false;toast(n+" × "+l.nom+" sorti"+(n>1?"s":"")+" du stock");setTimeout(()=>ficheProduit(id),150)}catch(e){toast("Échec ("+(e.code||"erreur")+")")}
+}
+async function annulerSortie(sid){const x=S.sorties.find(z=>z.id===sid);if(!x||!confirm("Annuler cette sortie ? Les leurres reviennent en stock."))return;
+  try{await store.batch([{op:"del",c:"sorties",id:sid}]);toast("Sortie annulée");setTimeout(()=>ficheProduit(x.leurreId),150)}catch(e){toast("Échec")}}
+
+/* ---------- Inventaire : stock réel contre stock théorique ---------- */
+let invTmp={mat:{},fin:{},pese:{}},invCat="tous",invVue="mat";
+function ecartArt(a,reel){const th=Number(a.qte)||0,e=reel-th;return{th,e,v:e<0?-fifo(a.id,-e).cost:e*pu(a)}}
+const niveauEcart=(e,th)=>{const p=th>0?Math.abs(e)/th:Math.abs(e)>0?1:0;return e===0?"ok":p<=0.02?"ok":p<=0.1?"warn":"crit"};
+function vInventaire(){
+  const seg=`<div class="seg" role="group" aria-label="Inventaire" style="margin-top:.75rem"><button aria-pressed="${invVue==="mat"}" onclick="invVue='mat';render()">Matières premières</button><button aria-pressed="${invVue==="fin"}" onclick="invVue='fin';render()">Produits finis</button><button aria-pressed="${invVue==="hist"}" onclick="invVue='hist';render()">Historique</button></div>`;
+  let corps="";
+  if(invVue==="hist"){const H=[...S.inventaires].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+    corps=`<div class="list">${H.length?H.map(h=>`<div class="row"><div class="grow"><h3>${new Date(h.date).toLocaleDateString("fr-FR",{dateStyle:"long"})}</h3><div class="sub">${(h.lignes||[]).length} ligne${(h.lignes||[]).length>1?"s":""} comptée${(h.lignes||[]).length>1?"s":""}, ${(h.lignes||[]).filter(x=>x.ecart).length} écart${(h.lignes||[]).filter(x=>x.ecart).length>1?"s":""}${(h.lignes||[]).filter(x=>x.ecart).slice(0,4).map(x=>" · "+esc(x.nom)+" "+(x.ecart>0?"+":"")+fmt(x.ecart)+" "+esc(x.unite||"")).join("")}</div></div><span class="num ${h.valeur<0?"st-crit":""}">${eur(h.valeur)}</span></div>`).join(""):`<div class="empty">Aucun inventaire validé.</div>`}</div>`}
+  else if(invVue==="fin"){const rows=S.leurres.flatMap(l=>clesStock(l.id).map(c=>({l,c,th:dispoC(l.id,c)}))).filter(r=>r.th!==0||invTmp.fin[r.l.id+"|"+r.c]!=null);
+    const ecs=rows.filter(r=>invTmp.fin[r.l.id+"|"+r.c]!=null&&String(invTmp.fin[r.l.id+"|"+r.c]).trim()!=="").map(r=>({...r,reel:Math.round(pnum(invTmp.fin[r.l.id+"|"+r.c]))})).map(r=>({...r,e:r.reel-r.th}));
+    corps=`<p class="sub">Compte les leurres finis rangés et saisis le nombre réel. Laisse vide ce que tu n'as pas compté.</p><div class="list">${rows.length?rows.map(r=>{const k=r.l.id+"|"+r.c,v=invTmp.fin[k],e=v!=null&&String(v).trim()!==""?Math.round(pnum(v))-r.th:null,n=e===null?"":niveauEcart(e,r.th);
+      return`<div class="row"><div class="grow">${esc(r.l.nom)} ${esc(r.l.version||"")}<div class="sub">${esc(r.c||"sans coloris")} · théorique ${r.th}</div></div><input type="text" inputmode="numeric" style="width:5rem" placeholder="Compté" value="${esc(v??"")}" oninput="invTmp.fin['${k}']=this.value;majInvLigne(this,${r.th},'fin')" aria-label="Compté"><span class="inv-e" style="min-width:4.5rem;text-align:right">${e===null?"":`<span class="st-${n}">${ICO_NIV[n]} ${e>0?"+":""}${e}</span>`}</span></div>`}).join(""):`<div class="empty">Aucun produit fini.</div>`}</div>
+    <div class="actions" style="margin-top:.75rem"><span class="sub" style="margin-right:auto">${ecs.length} ligne${ecs.length>1?"s":""} comptée${ecs.length>1?"s":""}, ${ecs.filter(r=>r.e).length} écart${ecs.filter(r=>r.e).length>1?"s":""}</span><button class="btn ghost" onclick="invTmp.fin={};render()">Effacer</button><button class="btn" onclick="validerInvFin()">Valider le comptage</button></div>`}
+  else{const A=S.articles.filter(a=>invCat==="tous"||a.categorie===invCat).sort((a,b)=>(CATS.indexOf(a.categorie)-CATS.indexOf(b.categorie))||nomArt(a).localeCompare(nomArt(b)));
+    const cpt=S.articles.filter(a=>invTmp.mat[a.id]!=null&&String(invTmp.mat[a.id]).trim()!=="").map(a=>({a,...ecartArt(a,pnum(invTmp.mat[a.id]))}));
+    const vm=cpt.filter(x=>x.v<0).reduce((s,x)=>s+x.v,0),vp=cpt.filter(x=>x.v>0).reduce((s,x)=>s+x.v,0);
+    corps=`<div class="filters" style="margin-top:.25rem">${["tous",...CATS.filter(c=>S.articles.some(a=>a.categorie===c))].map(o=>`<button aria-pressed="${invCat===o}" onclick="invCat='${o}';render()">${o==="tous"?"Tous":o}</button>`).join("")}</div>
+    <div class="kpis kpis3"><div class="kpi"><strong class="num">${cpt.length}/${S.articles.length}</strong><span>articles comptés</span></div><div class="kpi"><strong class="num ${vm<0?"st-crit":""}">${eur(vm)}</strong><span>manquants</span></div><div class="kpi"><strong class="num">${eur(vp)}</strong><span>surplus</span></div></div>
+    <p class="sub">Saisis la quantité réellement présente. Pour le filament, pèse les bobines : poids brut moins le poids des bobines vides.</p>
+    <div class="list">${A.length?A.map(a=>{const v=invTmp.mat[a.id],c=v!=null&&String(v).trim()!==""?ecartArt(a,pnum(v)):null,n=c?niveauEcart(r3(c.e),c.th):"",fil=a.categorie==="Filament",p=invTmp.pese[a.id]||{};
+      return`<div class="row" style="flex-wrap:wrap"><div class="grow" style="min-width:10rem">${dot(a)}${esc(nomArt(a))}<div class="sub">théorique ${fmt(a.qte)} ${esc(a.unite)}</div></div>
+      <span style="display:flex;align-items:center;gap:.3rem"><input id="inv_${a.id}" type="text" inputmode="decimal" style="width:6rem" placeholder="Compté" value="${esc(vIn(v??""))}" oninput="invTmp.mat['${a.id}']=this.value;majInvLigne(this,${Number(a.qte)||0},'mat')" aria-label="Quantité comptée ${esc(nomArt(a))}"><span class="sub">${esc(a.unite)}</span></span>
+      <span class="inv-e" style="min-width:6.5rem;text-align:right">${c?`<span class="st-${n}">${ICO_NIV[n]} ${c.e>0?"+":""}${fmt(c.e)} ${esc(a.unite)}</span><br><span class="sub">${eur(c.v)}</span>`:""}</span>
+      ${fil?`<details style="flex-basis:100%;min-width:0"><summary class="sub">Peser les bobines</summary><div class="pese"><label>Brut pesé (g)<input type="text" inputmode="decimal" value="${esc(p.brut??"")}" oninput="peser('${a.id}','brut',this.value)"></label><label>Bobines<input type="text" inputmode="numeric" value="${esc(p.nb??"")}" oninput="peser('${a.id}','nb',this.value)"></label><label>Bobine vide (g)<input type="text" inputmode="decimal" value="${esc(p.tare??vIn(a.tare??""))}" placeholder="ex. 180" oninput="peser('${a.id}','tare',this.value)"></label></div></details>`:""}</div>`}).join(""):`<div class="empty">Aucun article.</div>`}</div>
+    <div class="actions" style="margin-top:.75rem"><span class="sub" style="margin-right:auto">Valider crée les corrections dans le journal et garde l'inventaire dans l'historique.</span><button class="btn ghost" onclick="invTmp.mat={};invTmp.pese={};render()">Effacer</button><button class="btn" onclick="validerInvMat()">Valider l'inventaire</button></div>`}
+  return head("Stock")+ongletsStock()+seg+corps}
+function majInvLigne(inp,th,t){const z=inp.closest(".row").querySelector(".inv-e"),s=inp.value.trim();if(!s){z.innerHTML="";return}
+  const reel=t==="fin"?Math.round(pnum(s)):pnum(s),e=r3(reel-th),n=niveauEcart(e,th);
+  if(t==="fin"){z.innerHTML=`<span class="st-${n}">${ICO_NIV[n]} ${e>0?"+":""}${e}</span>`;return}
+  const a=art(inp.id.slice(4)),c=ecartArt(a,reel);z.innerHTML=`<span class="st-${n}">${ICO_NIV[n]} ${e>0?"+":""}${fmt(e)} ${esc(a.unite)}</span><br><span class="sub">${eur(c.v)}</span>`}
+function peser(aid,k,v){const p=(invTmp.pese[aid]??={});p[k]=v;const a=art(aid),tare=pnum(p.tare??a.tare),brut=pnum(p.brut),nb=Math.round(pnum(p.nb))||(brut>0?1:0);
+  if(brut>0){const net=r3(Math.max(0,brut-nb*tare));invTmp.mat[aid]=vIn(net);const i=$("#inv_"+aid);if(i){i.value=vIn(net);majInvLigne(i,Number(a.qte)||0,"mat")}}}
+async function validerInvMat(){const L=S.articles.filter(a=>invTmp.mat[a.id]!=null&&String(invTmp.mat[a.id]).trim()!=="");
+  if(!L.length){toast("Aucune quantité saisie");return}
+  const ops=[],lignes=[];let valeur=0;
+  L.forEach(a=>{const reel=pnum(invTmp.mat[a.id]),c=ecartArt(a,reel),e=r3(c.e);valeur+=c.v;lignes.push({articleId:a.id,nom:nomArt(a),unite:a.unite||"",theo:r3(c.th),reel:r3(reel),ecart:e,valeur:r2(c.v)});
+    if(e>0)ops.push(...opsEntree(a,e,pu(a),{motif:"inventaire",origine:"inventaire"}).ops);else if(e<0)ops.push(...opsSortie(a,-e,"inventaire").ops);
+    const t=invTmp.pese[a.id]?.tare;if(t!=null&&String(t).trim()!==""&&pnum(t)!==Number(a.tare||0))ops.push({op:"upd",c:"articles",id:a.id,f:{tare:pnum(t)}})});
+  const ne=lignes.filter(x=>x.ecart).length;
+  if(!confirm(`Valider l'inventaire ? ${lignes.length} article${lignes.length>1?"s":""} compté${lignes.length>1?"s":""}, ${ne} écart${ne>1?"s":""} (${eur(valeur)}). Le stock théorique sera aligné sur ce que tu as compté.`))return;
+  ops.push({op:"set",c:"inventaires",id:uid(),data:{date:new Date().toISOString(),type:"matieres",lignes,valeur:r2(valeur)}});
+  try{await lots_batch(ops);invTmp.mat={};invTmp.pese={};toast("Inventaire validé");render()}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
+async function validerInvFin(){const K=Object.keys(invTmp.fin).filter(k=>String(invTmp.fin[k]).trim()!=="");if(!K.length){toast("Aucune quantité saisie");return}
+  const ops=[],lignes=[];let valeur=0;
+  K.forEach(k=>{const[lid,col]=k.split("|"),l=S.leurres.find(x=>x.id===lid);if(!l)return;const th=dispoC(lid,col),reel=Math.round(pnum(invTmp.fin[k])),e=reel-th;
+    let v=0,alloc=[];if(e<0){const a=allocFifo(lid,col,-e);alloc=a.alloc;v=-a.cu*-e}else if(e>0)v=e*coutLeurre(l);valeur+=v;
+    lignes.push({leurreId:lid,nom:l.nom+(col?" "+col:""),unite:"pcs",theo:th,reel,ecart:e,valeur:r2(v)});
+    if(e)ops.push({op:"set",c:"sorties",id:uid(),data:{date:new Date().toISOString(),leurreId:lid,nom:l.nom,version:l.version||"",coloris:col,n:-e,motif:"inventaire",note:"Inventaire",alloc,cout:r2(-v)}})});
+  if(!confirm(`Valider le comptage ? ${lignes.filter(x=>x.ecart).length} écart(s).`))return;
+  ops.push({op:"set",c:"inventaires",id:uid(),data:{date:new Date().toISOString(),type:"finis",lignes,valeur:r2(valeur)}});
+  try{await lots_batch(ops);invTmp.fin={};toast("Comptage validé");render()}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
+
+/* ---------- Import de factures ---------- */
+let factTmp=null;
+async function chargerPdfjs(){if(window.pdfjsLib)return window.pdfjsLib;
+  await new Promise((ok,ko)=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js";s.onload=ok;s.onerror=()=>ko(new Error("Lecteur PDF indisponible"));document.head.appendChild(s)});
+  pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";return pdfjsLib}
+async function textePdf(file){const lib=await chargerPdfjs(),doc=await lib.getDocument({data:await file.arrayBuffer()}).promise,out=[];
+  for(let p=1;p<=Math.min(doc.numPages,10);p++){const pg=await doc.getPage(p),tc=await pg.getTextContent(),rows={};
+    tc.items.forEach(it=>{if(!it.str||!it.str.trim())return;const y=Math.round(it.transform[5]/3);(rows[y]??=[]).push({x:it.transform[4],s:it.str.trim()})});
+    Object.keys(rows).map(Number).sort((a,b)=>b-a).forEach(y=>out.push(rows[y].sort((a,b)=>a.x-b.x).map(i=>i.s).join("   ")))}
+  return out.join("\n")}
+const sansAcc=s=>String(s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"");
+const TRAD={black:"noir",white:"blanc",red:"rouge",blue:"bleu",green:"vert",yellow:"jaune",grey:"gris",gray:"gris",clear:"transparent",silver:"argent",gold:"or",pink:"rose",purple:"violet",brown:"marron",hook:"hamecon",hooks:"hamecon",treble:"triple",split:"anneau",ring:"anneau",rings:"anneau",resin:"resine",epoxy:"resine"};
+const motsDe=s=>sansAcc(s).replace(/(\d)([a-z])/g,"$1 $2").replace(/([a-z])(\d)/g,"$1 $2").split(/[^a-z0-9]+/).filter(w=>w.length>=3||/^\d/.test(w)).map(w=>TRAD[w]||w).map(w=>/^[a-z]{4,}[sx]$/.test(w)?w.slice(0,-1):w);
+const RX_MONT=/-?\d{1,3}(?:[ .  ]\d{3})*[.,]\d{2}(?!\d)/g;
+const montant=s=>pnum(String(s).replace(/[ .  ](?=\d{3}(?!\d))/g,""));
+const RX_EXCL=/(total|tva|vat|sous-total|subtotal|livraison|frais de port|port\b|shipping|exp[ée]dition|transport|remise|r[ée]duction|discount|coupon|acompte|pay[ée]|paiement|solde|montant|iban|capital|siret|rcs|net [àa] payer)/i;
+function analyserFacture(txt){const lignes=txt.split(/\r?\n/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean),low=sansAcc(txt);
+  const MOIS=["janvier","fevrier","mars","avril","mai","juin","juillet","aout","septembre","octobre","novembre","decembre"];
+  let date="",m=txt.match(/\b(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{4}|\d{2})\b/);
+  if(m){const y=m[3].length===2?"20"+m[3]:m[3];date=`${y}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`}
+  else if(m=low.match(/\b(\d{1,2})\s+(janvier|fevrier|mars|avril|mai|juin|juillet|aout|septembre|octobre|novembre|decembre)\s+(\d{4})/))date=`${m[3]}-${String(MOIS.indexOf(m[2])+1).padStart(2,"0")}-${m[1].padStart(2,"0")}`;
+  const ref=(txt.match(/(?:facture|invoice|commande|order)\s*(?:n[°o]\.?|no\.?|num[ée]ro|#)?\s*[:#]?\s*([A-Z0-9][A-Z0-9\-\/]{3,})/i)||[])[1]||"";
+  const CONNUS=["Amazon","AliExpress","Creality","Sunlu","Elegoo","Bambu Lab","Polymaker","eSun","3DJake","Prusa","Geeetech","Anycubic","Smooth-On","Owner","BKK","Decathlon","Leroy Merlin","Castorama","Rougier & Plé","Cultura","Action","Temu","Shein","Pêcheur.com","Pacific Pêche","Decathlon"];
+  const four=CONNUS.map(c=>({c,i:low.indexOf(sansAcc(c))})).filter(x=>x.i>=0).sort((a,b)=>a.i-b.i)[0]?.c||"";
+  let total=0,port=0;const cand=[];
+  lignes.forEach(L=>{const am=(L.match(RX_MONT)||[]).map(montant);if(!am.length)return;const lo=sansAcc(L);
+    if(/(total|net a payer|montant)/.test(lo)&&!/sous/.test(lo)&&!/ht\b/.test(lo)){total=Math.max(total,Math.abs(am[am.length-1]));return}
+    if(/(livraison|frais de port|shipping|expedition|transport)/.test(lo)){port+=Math.abs(am[am.length-1]);return}
+    if(RX_EXCL.test(L)||!/[a-zA-Z]{3,}/.test(L))return;
+    const tot=am[am.length-1];if(!(tot>0))return;let q=1,sur=false;
+    if(am.length>=2&&am[0]>0){const r=tot/am[0];if(Math.abs(r-Math.round(r))<0.02&&Math.round(r)>=1&&Math.round(r)<1000){q=Math.round(r);sur=true}}
+    if(!sur){const qm=L.match(/(?:^|\s)(?:qt[ée]|quantit[ée])\s*:?\s*(\d{1,3})\b/i)||L.match(/(?:^|\s)[x×]\s?(\d{1,3})\b/)||L.match(/^(\d{1,3})\s*[x×]\s/);if(qm)q=+qm[1]}
+    const lib=L.replace(RX_MONT,"").replace(/€|EUR/g,"").replace(/\s{2,}/g," ").trim().replace(new RegExp("\\s"+q+"$"),"");
+    cand.push({lib,q,montant:tot,articleId:matchArticle(lib)})});
+  return{date,ref,fournisseur:four,total,port,lignes:cand.slice(0,40)}}
+function matchArticle(lib){const w=new Set(motsDe(lib));let best="",sc=0;
+  S.articles.forEach(a=>{const mots=motsDe([nomArt(a),a.matiere,a.couleur,a.categorie].join(" "));const s=mots.filter(x=>w.has(x)).length/(mots.length||1)+(a.matiere&&w.has(sansAcc(a.matiere))?0.5:0)+(a.couleur&&w.has(sansAcc(a.couleur))?0.5:0);if(s>sc){sc=s;best=a.id}});
+  return sc>=0.5?best:""}
+function editFacture(){factTmp=null;
+  body.innerHTML=`<h2>Importer une facture</h2>
+  <p class="sub" style="margin:0">L'app lit le texte de la facture et te propose les lignes avec leur prix. Tu vérifies, tu associes chaque ligne à un article, et chaque ligne devient un lot avec son prix réel. Les factures scannées (photo) ne sont pas lisibles : colle le texte ou saisis les lignes.</p>
+  <div class="grid2"><label>Facture PDF<span class="btn ghost" style="text-align:center;cursor:pointer;position:relative">Choisir le PDF<input type="file" accept="application/pdf,.pdf" style="position:absolute;inset:0;opacity:0;cursor:pointer" onchange="lireFacture(this.files[0])"></span></label>
+  <label>ou colle le texte<textarea id="fa_txt" style="min-height:2.6rem" placeholder="Copie le contenu de l'e-mail ou de la facture"></textarea></label></div>
+  <div class="actions" style="justify-content:flex-start"><button class="btn ghost sm" onclick="factTmp=analyserFacture($('#fa_txt').value);dessinerFacture()">Analyser le texte</button><button class="btn ghost sm" onclick="factTmp={date:new Date().toISOString().slice(0,10),ref:'',fournisseur:'',total:0,port:0,lignes:[{lib:'',q:1,montant:0,articleId:''}]};dessinerFacture()">Saisir à la main</button></div>
+  <p class="sub" id="fa_msg" style="margin:0"></p><div id="fa_res"></div>`;
+  dlg.showModal()}
+async function lireFacture(f){if(!f)return;$("#fa_msg").textContent="Lecture du PDF…";
+  try{const t=await textePdf(f);if(!t.trim()){$("#fa_msg").textContent="Ce PDF ne contient pas de texte (scan ou photo). Colle le texte ou saisis à la main.";return}
+    factTmp=analyserFacture(t);$("#fa_msg").textContent=`${factTmp.lignes.length} ligne${factTmp.lignes.length>1?"s":""} trouvée${factTmp.lignes.length>1?"s":""} dans « ${f.name} ». Vérifie chaque ligne avant d'enregistrer.`;dessinerFacture()}
+  catch(e){$("#fa_msg").textContent="Impossible de lire ce PDF ("+e.message+"). Colle le texte ou saisis à la main."}}
+function dessinerFacture(){const F=factTmp;if(!F)return;
+  const opts=sel=>`<option value="">Ignorer cette ligne</option>`+CATS.filter(c=>S.articles.some(a=>a.categorie===c)).map(c=>`<optgroup label="${esc(c)}">${S.articles.filter(a=>a.categorie===c).sort((x,y)=>nomArt(x).localeCompare(nomArt(y))).map(a=>`<option value="${a.id}" ${a.id===sel?"selected":""}>${esc(nomArt(a))}</option>`).join("")}</optgroup>`).join("");
+  $("#fa_res").innerHTML=`<div class="grid2" style="margin-top:.5rem"><label>Fournisseur<input value="${esc(F.fournisseur)}" oninput="factTmp.fournisseur=this.value"></label><label>N° de facture<input value="${esc(F.ref)}" oninput="factTmp.ref=this.value"></label>
+  <label>Date<input type="date" value="${esc(F.date)}" oninput="factTmp.date=this.value"></label><label>Frais de port (€)<input type="text" inputmode="decimal" value="${vIn(F.port||"")}" oninput="factTmp.port=pnum(this.value);majFacture()"></label></div>
+  <h3 style="margin:.6rem 0 .3rem">Lignes</h3><div id="fa_l" style="display:flex;flex-direction:column;gap:.5rem">${F.lignes.map((x,i)=>{const a=art(x.articleId),L=a?lotQ(a):1;return`<div class="bloc" style="display:flex;flex-direction:column;gap:.4rem">
+    <input value="${esc(x.lib)}" placeholder="Libellé" oninput="factTmp.lignes[${i}].lib=this.value" aria-label="Libellé">
+    <select onchange="factTmp.lignes[${i}].articleId=this.value;factTmp.lignes[${i}].qs=undefined;dessinerFacture()" aria-label="Article">${opts(x.articleId)}</select>
+    ${a?`<div class="grid2"><label>Conditionnements (${esc(cfg(a).lotsNom)})<input type="text" inputmode="decimal" value="${vIn(x.q)}" oninput="factTmp.lignes[${i}].q=pnum(this.value);factTmp.lignes[${i}].qs=undefined;majFacture()"></label>
+    <label>Montant de la ligne (€)<input type="text" inputmode="decimal" value="${vIn(x.montant)}" oninput="factTmp.lignes[${i}].montant=pnum(this.value);majFacture()"></label></div>
+    <p class="sub fa-pu" data-i="${i}" style="margin:0"></p>`:`<p class="sub" style="margin:0">${vIn(x.montant)} € · associe un article pour l'entrer en stock${S.articles.length?"":" (crée-le d'abord dans le Stock)"}</p>`}
+    <button type="button" class="btn ghost sm" style="align-self:flex-start" onclick="factTmp.lignes.splice(${i},1);dessinerFacture()">Retirer la ligne</button></div>`}).join("")}</div>
+  <button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="factTmp.lignes.push({lib:'',q:1,montant:0,articleId:''});dessinerFacture()">Ajouter une ligne</button>
+  <div class="recap" id="fa_rec" style="margin-top:.6rem"></div>
+  <div class="actions" style="margin-top:.6rem"><span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" onclick="validerFacture()">Entrer en stock</button></div>`;
+  majFacture()}
+function majFacture(){const F=factTmp,ok=F.lignes.filter(x=>art(x.articleId)&&x.q>0),base=ok.reduce((s,x)=>s+(Number(x.montant)||0),0),port=Number(F.port)||0;
+  document.querySelectorAll(".fa-pu").forEach(p=>{const x=F.lignes[+p.dataset.i],a=art(x.articleId);if(!a)return;const part=base>0?port*(Number(x.montant)||0)/base:0,tot=(Number(x.montant)||0)+part,L=lotQ(a);
+    p.textContent=x.q>0?`= ${fmt(x.q*L)} ${a.unite}, ${eur(tot/x.q)} par ${cfg(a).lotNom}${part?" (port compris)":""}`:"Indique la quantité"});
+  const tl=F.lignes.reduce((s,x)=>s+(Number(x.montant)||0),0),ecart=F.total?F.total-tl-port:0;
+  $("#fa_rec").innerHTML=`<div class="mv"><span class="mv-n">Lignes retenues<small>${ok.length} sur ${F.lignes.length}</small></span><span class="mv-c num">${eur(base)}</span></div><div class="mv"><span class="mv-n">Frais de port<small>répartis au prorata du montant de chaque ligne</small></span><span class="mv-c num">${eur(port)}</span></div>
+  ${F.total?`<div class="mv"><span class="mv-n ${Math.abs(ecart)>0.05?"st-warn":""}">Total lu sur la facture${Math.abs(ecart)>0.05?`<small>${ICO_NIV.warn} écart de ${eur(ecart)} avec les lignes : vérifie qu'il ne manque rien</small>`:""}</span><span class="mv-c num">${eur(F.total)}</span></div>`:""}`}
+async function validerFacture(){const F=factTmp,ok=F.lignes.filter(x=>art(x.articleId)&&x.q>0);if(!ok.length){toast("Associe au moins une ligne à un article");return}
+  const base=ok.reduce((s,x)=>s+(Number(x.montant)||0),0),port=Number(F.port)||0,fid=uid(),date=F.date?new Date(F.date+"T12:00:00").toISOString():new Date().toISOString(),ops=[];
+  ok.forEach(x=>{const a=art(x.articleId),L=lotQ(a),q=x.q*L,tot=(Number(x.montant)||0)+(base>0?port*(Number(x.montant)||0)/base:0);
+    ops.push(...opsEntree(a,q,q>0?tot/q:0,{fournisseur:F.fournisseur,facture:F.ref,factureId:fid,date,cout:r2(tot),origine:"facture"}).ops);
+    const f={prixLot:r2(tot/x.q)};if(!a.fournisseur&&F.fournisseur)f.fournisseur=F.fournisseur;ops.push({op:"upd",c:"articles",id:a.id,f})});
+  ops.push({op:"set",c:"factures",id:fid,data:{date,fournisseur:F.fournisseur,ref:F.ref,total:r2(F.total||base+port),port:r2(port),lignes:ok.map(x=>({lib:x.lib,articleId:x.articleId,q:x.q,montant:r2(x.montant)}))}});
+  dlg._sale=false;dlg.close();try{await lots_batch(ops);toast(`Facture enregistrée : ${ok.length} lot${ok.length>1?"s":""} en stock`)}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
+
 const suggestion=a=>{const L=lotQ(a),sl=Number(a.seuil)||0,q=Number(a.qte)||0;return Math.max(1,Math.ceil((Math.max(sl*2,sl+L)-q)/L))};
 function vCourses(){
   const L=S.articles.filter(a=>niveau(a).k!=="ok").sort((a,b)=>(niveau(a).k==="crit"?0:1)-(niveau(b).k==="crit"?0:1));
@@ -512,9 +882,8 @@ function vCourses(){
     <button class="btn ghost sm" onclick="acheteCourse('${a.id}',${k})">Acheté</button></div>`}).join("")}</div></section>`).join("")
   :`<div class="list" style="margin-top:.75rem"><div class="empty">Rien à acheter : tout le stock est au-dessus des seuils.</div></div>`);
 }
-function acheteCourse(id,k){const a=art(id);if(!a)return;const d=k*lotQ(a);
-  const m=mvt(a,d,"achat",{cout:Number(a.prixLot)>0?k*a.prixLot:null});
-  lancer([{op:"inc",c:"articles",id,d},m],"Acheté : + "+fmt(d)+" "+a.unite+" "+nomArt(a),[{op:"inc",c:"articles",id,d:-d},{op:"del",c:"mouvements",id:m.id}]);
+function acheteCourse(id,k){const a=art(id);if(!a)return;const d=k*lotQ(a),e=opsEntree(a,d,pu(a));
+  lancer(e.ops,"Acheté : + "+fmt(d)+" "+a.unite+" "+nomArt(a)+" au dernier prix. Corrige le prix du lot dans l'article si besoin.",e.undo);
 }
 function copierCourses(){
   const L=S.articles.filter(a=>niveau(a).k!=="ok");const four=[...new Set(L.map(a=>a.fournisseur||"Sans fournisseur"))].sort();
@@ -530,49 +899,53 @@ let leurresVue="fiches";
 function vLeurres(){
   const seg=`<div class="seg" role="group" aria-label="Affichage"><button aria-pressed="${leurresVue==="fiches"}" onclick="leurresVue='fiches';render()">Fiches</button><button aria-pressed="${leurresVue==="histo"}" onclick="leurresVue='histo';render()">Historique de fabrication</button></div>`;
   if(leurresVue==="histo"){
-    const h=[...S.fabrications].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
-    const tot=h.reduce((s,f)=>s+(Number(f.n)||0),0);
-    return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+seg+`<div class="list">${
-      h.length?h.slice(0,200).map(f=>`<div class="row"><div class="grow"><h3>${esc(f.nom)} <span class="pill">${esc(f.version||"")}</span> × ${f.n}</h3>
-        <div class="sub">${new Date(f.date).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"})}${f.projetId&&S.projets.find(p=>p.id===f.projetId)?", projet "+esc(S.projets.find(p=>p.id===f.projetId).nom):""}, ${(f.conso||[]).map(c=>fmt(c.qte)+" "+esc(c.unite)+" "+esc(c.nom)).join(", ")}</div></div>
-        <div style="text-align:right"><div class="num">${eur(f.cout)}</div><button class="btn ghost sm" style="margin-top:.3rem" onclick="annulerFab('${f.id}')">Annuler</button></div></div>`).join("")
-      :`<div class="empty">Aucune fabrication. Ouvre une fiche leurre et clique sur Fabriquer : le stock est déduit et la fabrication apparaît ici.</div>`}</div>
-      ${h.length?`<p class="sub">${tot} leurre${tot>1?"s":""} fabriqué${tot>1?"s":""} au total. « Annuler » remet les composants en stock et supprime la ligne.</p>`:""}`;
+    const h=groupesProd(),tot=S.fabrications.reduce((s,f)=>s+(Number(f.n)||0),0);
+    return head("Leurres",`<div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" onclick="editLeurre()">Nouvelle fiche</button><button class="btn" onclick="editProduction()">Nouvelle production</button></div>`)+seg+`<div class="list">${
+      h.length?h.slice(0,200).map(g=>{const fs=g.fs,cout=fs.reduce((s,f)=>s+(Number(f.cout)||0),0),reb=fs.reduce((s,f)=>s+(Number(f.coutRebut)||0),0),rat=fs.some(f=>f.ratee),pr=fs[0].projetId&&S.projets.find(p=>p.id===fs[0].projetId);return`<div class="row"><div class="grow"><h3><span class="pill">${esc(g.lot)}</span> ${fs.map(f=>`${esc(f.nom)} ${esc(f.version||"")}${f.coloris?" "+esc(f.coloris):""} × ${f.n}${f.lancees&&f.lancees!==f.n?"/"+f.lancees:""}`).join(", ")}${rat?` <span class="pill alert">raté</span>`:""}</h3>
+        <div class="sub">${new Date(g.date).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"})}${pr?", projet "+esc(pr.nom):""}${fs[0].plateau?`, ${fmt(fs[0].plateau.g,1)} g + ${fmt(fs[0].plateau.purge,1)} g de purge, ${fmt(fs[0].plateau.h)} h`:", "+(fs[0].conso||[]).map(c=>fmt(c.qte)+" "+esc(c.unite)+" "+esc(c.nom)).join(", ")}${reb>0?`, <span class="st-crit">perte ${eur(reb)}</span>`:""}</div></div>
+        <div style="text-align:right"><div class="num">${eur(cout)}</div><button class="btn ghost sm" style="margin-top:.3rem" onclick="annulerProd('${g.k}')">Annuler</button></div></div>`}).join("")
+      :`<div class="empty">Aucune production. Clique sur Nouvelle production : la matière est déduite lot par lot et les leurres réussis entrent en stock.</div>`}</div>
+      ${h.length?`<p class="sub">${tot} leurre${tot>1?"s":""} fabriqué${tot>1?"s":""} au total. Un plateau = un lot. « Annuler » remet la matière dans ses lots d'origine.</p>`:""}`;
   }
   const l=[...S.leurres].sort((a,b)=>(a.nom+a.version).localeCompare(b.nom+b.version));
-  return head("Leurres",`<button class="btn" onclick="editLeurre()">Nouvelle fiche</button>`)+seg+`<div class="list">${
+  return head("Leurres",`<div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" onclick="editLeurre()">Nouvelle fiche</button><button class="btn" onclick="editProduction()">Nouvelle production</button></div>`)+seg+`<div class="list">${
     l.length?l.map(x=>{const f=fabricables(x),nf=S.fabrications.filter(z=>z.leurreId===x.id).reduce((s,z)=>s+(Number(z.n)||0),0);return`<div class="row click" onclick="editLeurre('${x.id}')"><div class="grow"><h3>${esc(x.nom)} <span class="pill">${esc(x.version||"V1")}</span></h3><div class="sub">${[x.corps,x.longueur&&x.longueur+" mm",x.poids&&x.poids+" g",x.nage].filter(Boolean).map(esc).join(" · ")||"Caractéristiques à compléter"}${nf?" · fabriqué "+nf+" fois":""}${prisesDe(x.id)?" · "+prisesDe(x.id)+" prise"+(prisesDe(x.id)>1?"s":""):""}${nbLiens(x)}${nbMed(x)}</div></div><div style="text-align:right"><div class="num">${eur(coutLeurre(x))}</div><div class="sub">${f} fabricable${f>1?"s":""}</div></div></div>`}).join("")
     :`<div class="empty">Aucune fiche. Crée un modèle, liste ses composants, et le coût de revient se calcule depuis ton stock.</div>`}</div>`;
 }
-async function annulerFab(id){
-  const f=S.fabrications.find(x=>x.id===id);if(!f)return;
-  if(!confirm(`Annuler la fabrication de ${f.n} × ${f.nom} ? Les composants seront remis en stock.`))return;
-  const ops=(f.conso||[]).filter(c=>art(c.articleId)).map(c=>({op:"inc",c:"articles",id:c.articleId,d:Number(c.qte)||0}));
-  (f.mvtIds||[]).forEach(m=>ops.push({op:"del",c:"mouvements",id:m}));ops.push({op:"del",c:"fabrications",id});
-  try{await store.batch(ops);toast("Fabrication annulée, stock remis")}catch(e){toast("Échec ("+(e.code||"erreur")+")")}
-}
+const annulerFab=id=>{const f=S.fabrications.find(x=>x.id===id);annulerProd(f?.prodId||id)};
 function filters(opts){return`<div class="filters">${["tous",...opts].map(o=>`<button aria-pressed="${filtre===o}" onclick="filtre='${o}';render()">${o==="tous"?"Tous":o}</button>`).join("")}</div>`}
 
 /* ---------- Actions ---------- */
 document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";ventesFiltre="toutes";refSel=null;stockQ="";stockOnglet="articles";stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
+/* Fenêtres : clic à côté = fermer, avec confirmation si une saisie est en cours */
+function fermable(d){let bas=null;
+  d.addEventListener("pointerdown",e=>{bas=e.target});
+  d.addEventListener("input",()=>{d._sale=true});
+  d.addEventListener("close",()=>{d._sale=false});
+  const ok=()=>!d._sale||confirm("Fermer sans enregistrer ? Ce que tu as saisi sera perdu.");
+  d.addEventListener("cancel",e=>{if(!ok())e.preventDefault()});
+  d.addEventListener("click",e=>{if(e.target!==d||bas!==d)return;const r=d.getBoundingClientRect();
+    if(e.clientX>=r.left&&e.clientX<=r.right&&e.clientY>=r.top&&e.clientY<=r.bottom)return;if(ok())d.close()});
+}
 function toast(t,action){const e=$("#toast");e.textContent=t;e.classList.toggle("act",!!action);
   if(action){const b=document.createElement("button");b.textContent=action.label;b.onclick=()=>{e.classList.remove("show","act");clearTimeout(e._t);action.fn()};e.appendChild(b)}
   e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show","act"),action?6000:2200)}
 const dernierAppui={};
-const MOTIFS={achat:"Achat",sortie:"Sortie",fabrication:"Fabrication",annulation:"Annulation",correction:"Correction",initial:"Stock initial",perte:"Perte / casse"};
+const MOTIFS={achat:"Achat",sortie:"Sortie",fabrication:"Fabrication",annulation:"Annulation",correction:"Correction",initial:"Stock initial",perte:"Perte / casse",rebut:"Impression ratée",inventaire:"Inventaire"};
 function mvt(a,delta,motif,x={}){return{op:"set",c:"mouvements",id:uid(),data:{date:new Date().toISOString(),articleId:a.id,nom:nomArt(a),categorie:a.categorie||"",delta:Math.round(delta*1000)/1000,unite:a.unite||"",motif,cout:x.cout??null,projetId:x.projetId||"",ref:x.ref||""}}}
 async function lancer(ops,ok,undoOps){try{await store.batch(ops);toast(ok,undoOps?{label:"Annuler",fn:()=>store.batch(undoOps).then(()=>toast("Annulé")).catch(e=>toast("Échec : "+(e.code||"erreur")))}:undefined)}catch(e){toast("Échec : "+(e.code||"erreur"))}}
 function bouger(id,sens){if(stockVerrou){toast("Déverrouille d'abord avec le cadenas");return}const a=art(id);if(!a)return;
   const t=Date.now();if(t-(dernierAppui[id]||0)<800)return;dernierAppui[id]=t;
   const L=lotQ(a),q=Number(a.qte)||0;
-  let d=sens*L;if(sens<0){if(q<=0){toast("Stock déjà à zéro");return}if(q<L)d=-q}
-  const m=mvt(a,d,d>0?"achat":"sortie",{cout:d>0&&Number(a.prixLot)>0?Number(a.prixLot):null});
-  lancer([{op:"inc",c:"articles",id,d},m],(d>0?"+ ":"− ")+fmt(Math.abs(d))+" "+a.unite+" "+nomArt(a),[{op:"inc",c:"articles",id,d:-d},{op:"del",c:"mouvements",id:m.id}]);
+  if(sens>0){const e=opsEntree(a,L,pu(a));lancer(e.ops,"+ "+fmt(L)+" "+a.unite+" "+nomArt(a)+(pu(a)>0?" au dernier prix ("+eur(pu(a)*L)+")":", prix inconnu : corrige-le dans l'article"),e.undo);return}
+  if(q<=0){toast("Stock déjà à zéro");return}
+  const d=Math.min(L,q),s=opsSortie(a,d,"sortie");lancer(s.ops,"− "+fmt(d)+" "+a.unite+" "+nomArt(a),s.undo);
 }
 function cocher(pid,tid){const p=S.projets.find(x=>x.id===pid);if(!p)return;
   upd("projets",pid,{taches:p.taches.map(t=>t.id===tid?{...t,fait:true}:t)});toast("Tâche terminée")}
 
 const dlg=$("#dlg"),body=$("#dlgBody");
+fermable(dlg);fermable($("#viewer"));
 const opt=(arr,v)=>arr.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("");
 const val=id=>document.getElementById(id).value.trim();
 const pnum=v=>{const n=parseFloat(String(v??"").replace(/\s/g,"").replace(",","."));return isFinite(n)?n:0};
@@ -583,8 +956,9 @@ function wire(c,id,build){
   const orig0=id?JSON.parse(JSON.stringify(S[c].find(x=>x.id===id)||{})):null;
   $("#ok").onclick=async()=>{const o=build();if(!o)return;dlg.close();
     if(c==="articles"){const avant=id?Number(orig0.qte)||0:0,apres=Number(o.qte)||0;
-      if(apres!==avant){const m=mvt({...o},apres-avant,id?"correction":"initial");
-        try{await store.batch([{op:"set",c,id:o.id,data:id?{...orig0,...o,id:undefined}:{...o,medias:[],id:undefined}},m]);toast("Enregistré");}catch(e){toast("Échec de l'enregistrement : "+(e.code||"erreur"))}return}}
+      if(apres!==avant){const base={op:"set",c,id:o.id,data:id?{...orig0,...o,qte:avant,id:undefined}:{...o,qte:0,medias:[],id:undefined}},a2={...orig0,...o,qte:avant};
+        const mv=apres>avant?opsEntree(a2,apres-avant,pu(a2),{motif:id?"correction":"initial",origine:id?"ajustement":"achat"}).ops:opsSortie(a2,avant-apres,"correction").ops;
+        try{await store.batch([base,...mv]);toast("Enregistré");}catch(e){toast("Échec de l'enregistrement : "+(e.code||"erreur"))}return}}
     if(!id){await save(c,{...o,medias:[]});toast("Enregistré");return}
     const diff={};Object.keys(o).forEach(k=>{if(k!=="id"&&JSON.stringify(o[k])!==JSON.stringify(orig0[k]))diff[k]=o[k]});
     if(Object.keys(diff).length){await upd(c,id,diff);toast("Enregistré")}else toast("Aucune modification")};
@@ -625,7 +999,7 @@ function formArticle(init){
   <div class="grid2">
   <label>Unité de stock<select id="f_unite" onchange="majArtCalc()">${opt(unites,unite)}</select></label>
   <label><span>1 ${c.lotNom} = (<span class="u">${esc(unite)}</span>)</span><input id="f_lot" type="text" inputmode="decimal" autocomplete="off" value="${vIn(lot)}" oninput="majArtCalc()"></label>
-  <label>Prix d'un${c.fem?"e":""} ${c.lotNom} (€)<input id="f_plot" type="text" inputmode="decimal" autocomplete="off" value="${vIn(prev.prixLot??"")}" oninput="majArtCalc()"></label>
+  <label>${prev.id?"Dernier prix":"Prix"} d'un${c.fem?"e":""} ${c.lotNom} (€)<input id="f_plot" type="text" inputmode="decimal" autocomplete="off" value="${vIn(prev.prixLot??"")}" oninput="majArtCalc()"></label>
   <label>Prix unitaire (calculé)<input id="f_pu" disabled></label>
   <label><span>En stock (<span class="u">${esc(unite)}</span>)</span><input id="f_qte" type="text" inputmode="decimal" autocomplete="off" value="${vIn(prev.qte??0)}" oninput="majArtCalc()"></label>
   <label><span>Seuil d'alerte (<span class="u">${esc(unite)}</span>)</span><input id="f_seuil" type="text" inputmode="decimal" autocomplete="off" value="${vIn(prev.seuil??0)}"></label>
@@ -634,22 +1008,24 @@ function formArticle(init){
   ${Number(prev.prix)>0&&!(Number(prev.prixLot)>0)?`<p class="sub" style="margin:0;color:var(--alert)">Ancien prix unitaire enregistré : ${eur(prev.prix)}/${esc(prev.unite)}. Renseigne le prix d'achat pour le remplacer.</p>`:""}
   <label>Fournisseur<input id="f_four" value="${esc(prev.fournisseur)}"></label>
   <label>Notes<textarea id="f_notes">${esc(prev.notes)}</textarea></label>
-  ${prev.id&&init?blocAchat(prev)+blocMvts(prev.id):""}`;
+  ${prev.id&&init?blocLots(prev)+blocAchat(prev)+blocPerte(prev)+blocMvts(prev.id):""}`;
   majArtCalc();
 }
 const optProjets=(sel)=>`<option value="">Aucun projet</option>`+S.projets.filter(p=>p.statut!=="Terminé"||p.id===sel).map(p=>`<option value="${p.id}" ${p.id===sel?"selected":""}>${esc(p.nom)}</option>`).join("");
 function blocAchat(a){const c=cfg(a);return`<details class="bloc"><summary>Enregistrer un achat</summary>
-  <div class="grid2" style="margin-top:.6rem"><label>Nombre de ${c.lotsNom}<input id="ac_n" type="text" inputmode="decimal" value="1" oninput="$('#ac_p').placeholder=vIn((pnum(this.value)*(Number(art('${a.id}')?.prixLot)||0)).toFixed(2))"></label>
-  <label>Prix payé total (€)<input id="ac_p" type="text" inputmode="decimal" placeholder="${vIn((Number(a.prixLot)||0).toFixed(2))}"></label>
-  <label style="grid-column:1/-1">Pour le projet<select id="ac_proj">${optProjets()}</select></label></div>
-  <p class="sub" style="margin:.4rem 0">Ajoute la quantité au stock et la note dans le journal. Si le prix payé diffère, le prix du ${c.lotNom} est mis à jour.</p>
+  <div class="grid2" style="margin-top:.6rem"><label>Nombre de ${c.lotsNom}<input id="ac_n" type="text" inputmode="decimal" value="1"></label>
+  <label>Prix payé total, port compris (€)<input id="ac_p" type="text" inputmode="decimal" placeholder="${vIn((Number(a.prixLot)||0).toFixed(2))}"></label>
+  <label>Fournisseur<input id="ac_f" value="${esc(a.fournisseur)}"></label><label>N° de facture<input id="ac_r"></label>
+  <label>Date<input id="ac_d" type="date" value="${new Date().toISOString().slice(0,10)}"></label>
+  <label>Pour le projet<select id="ac_proj">${optProjets()}</select></label></div>
+  <p class="sub" style="margin:.4rem 0">Crée un lot avec son propre prix : les autres ${c.lotsNom} gardent le leur. Pour plusieurs articles d'un coup, utilise « Importer une facture ».</p>
   <button type="button" class="btn ghost sm" onclick="enregistrerAchat('${a.id}')">Enregistrer l'achat</button></details>`}
 async function enregistrerAchat(id){const a=art(id);if(!a)return;
   const n=num("ac_n");if(!(n>0)){toast("Indique une quantité");return}
-  const L=lotQ(a),d=n*L,prixTot=$("#ac_p").value.trim()?num("ac_p"):n*(Number(a.prixLot)||0);
-  const ops=[{op:"inc",c:"articles",id,d},mvt(a,d,"achat",{cout:prixTot||null,projetId:val("ac_proj")})];
-  const pl=prixTot>0?Math.round(prixTot/n*100)/100:0;if(pl>0&&pl!==Number(a.prixLot))ops.push({op:"upd",c:"articles",id,f:{prixLot:pl}});
-  dlg.close();await lancer(ops,"Achat enregistré : + "+fmt(d)+" "+a.unite+" "+nomArt(a));
+  const L=lotQ(a),d=n*L,prixTot=$("#ac_p").value.trim()?num("ac_p"):n*(Number(a.prixLot)||0),dt=val("ac_d");
+  const e=opsEntree(a,d,d>0?prixTot/d:0,{cout:r2(prixTot),fournisseur:val("ac_f"),facture:val("ac_r"),projetId:val("ac_proj"),date:dt?new Date(dt+"T12:00:00").toISOString():undefined});
+  const ops=[...e.ops];const pl=prixTot>0?r2(prixTot/n):0;if(pl>0&&pl!==Number(a.prixLot))ops.push({op:"upd",c:"articles",id,f:{prixLot:pl}});
+  dlg._sale=false;dlg.close();await lancer(ops,"Achat enregistré : + "+fmt(d)+" "+a.unite+" "+nomArt(a));
 }
 function blocMvts(id){const m=S.mouvements.filter(x=>x.articleId===id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
   return`<details class="bloc"><summary>Derniers mouvements${m.length?` (${m.length}${m.length===8?"+":""})`:""}</summary>${m.length?`<div style="margin-top:.5rem">${m.map(ligneMvt).join("")}</div>`:`<p class="sub">Aucun mouvement enregistré pour cet article.</p>`}</details>`}
@@ -722,7 +1098,9 @@ function editLeurre(id){
   <label>Longueur (mm)<input id="f_long" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.longueur??"")}"></label>
   <label>Poids (g)<input id="f_poids" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.poids??"")}"></label>
   <label>Main d'œuvre par leurre (h)<input id="f_moh" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.moH??"")}" placeholder="Ponçage, peinture, résine, montage" oninput="majCout()"></label>
-  <label>Prix de vente (€)<input id="f_pv" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.prixVente??"")}" oninput="majCout()"></label></div>
+  <label>Prix de vente (€)<input id="f_pv" type="text" inputmode="decimal" autocomplete="off" value="${vIn(l.prixVente??"")}" oninput="majCout()"></label>
+  <label>Coloris (séparés par des virgules)<input id="f_col" value="${esc((l.coloris||[]).join(", "))}" placeholder="Sardine, Maquereau, Chartreuse"></label>
+  <label>Leurres par plateau<input id="f_ppl" type="text" inputmode="numeric" value="${vIn(l.parPlateau??"")}" placeholder="1" oninput="majCout()"></label></div>
   <div><h3 style="margin-bottom:.4rem">Nomenclature (pour 1 leurre)</h3><div id="bom" style="display:flex;flex-direction:column;gap:.4rem"></div>
   <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpBom.push({cat:'',articleId:'',qte:''});drawBom()">Ajouter un composant</button>
   <p class="sub" id="cout" style="margin:.5rem 0 0"></p></div>
@@ -735,29 +1113,13 @@ function editLeurre(id){
   ${blocLiens(l.liens)}
   ${id?blocEssais(id):""}
   ${mediaBlock()}
+  ${id?blocRecette(l):""}
   ${id?`<div style="border-top:1px solid var(--line);padding-top:.8rem"><h3 style="margin-bottom:.4rem">Fabrication</h3>
-    <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap"><label style="flex-direction:row;align-items:center;gap:.4rem;color:var(--ink)">Quantité<input id="f_nfab" type="number" min="1" step="1" value="1" style="width:5rem"></label><select id="f_fproj" style="flex:1;min-width:9rem" aria-label="Projet">${optProjets()}</select><button class="btn ghost" id="fab">Fabriquer (déduit le stock)</button></div>
-    <p class="sub" style="margin:.4rem 0 0">${(()=>{const fs=S.fabrications.filter(z=>z.leurreId===id),n=fs.reduce((s,z)=>s+(Number(z.n)||0),0);return n?`Déjà fabriqué ${n} fois, dernière le ${new Date(fs.map(z=>z.date).sort().pop()).toLocaleDateString("fr-FR")}.`:"Jamais fabriqué."})()}</p></div>`:""}`+actions("leurres",id);
+    <button type="button" class="btn" onclick="ouvrirProd('${id}')">Lancer une production</button>
+    <p class="sub" style="margin:.4rem 0 0">${(()=>{const fs=S.fabrications.filter(z=>z.leurreId===id&&Number(z.n)>0),n=fs.reduce((s,z)=>s+(Number(z.n)||0),0);return n?`Déjà fabriqué ${n} fois, dernier lot ${esc(lotDe(fs.sort((a,b)=>(a.date||"").localeCompare(b.date||"")).pop()))}. En stock : ${Math.max(0,dispo(id))}.`:"Jamais fabriqué."})()}</p></div>`:""}`+actions("leurres",id);
   drawBom();drawLiens();drawMedia("leurres",id);
   wire("leurres",id,()=>{if(!val("f_nom")){toast("Donne un nom au modèle");return}
-    return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),impH:parseDuree($("#f_imph").value),moH:parseDuree($("#f_moh").value),prixVente:num("f_pv"),liens:liensSaisis(),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:pnum(b.qte)}))}});
-  if(id)$("#fab").onclick=async()=>{
-    const norm=x=>JSON.stringify((x||[]).filter(b=>b.articleId).map(b=>[b.articleId,pnum(b.qte)]));
-    if(norm(tmpBom)!==norm(l.bom)){toast("La nomenclature a changé : enregistre la fiche avant de fabriquer");return}
-    const n=Math.max(1,Math.round(num("f_nfab")||1)),bom=(l.bom||[]).filter(b=>b.articleId&&Number(b.qte)>0);
-    if(!bom.length){toast("Ajoute d'abord des composants à la nomenclature, puis enregistre");return}
-    const tot={};bom.forEach(b=>tot[b.articleId]=(tot[b.articleId]||0)+Number(b.qte)*n);
-    const absents=Object.keys(tot).filter(i=>!art(i));if(absents.length){toast("Un composant a été supprimé du stock : corrige la nomenclature");return}
-    const manque=Object.keys(tot).filter(i=>(Number(art(i).qte)||0)<tot[i]);
-    if(manque.length){toast("Stock insuffisant : "+manque.map(i=>nomArt(art(i))).join(", "));return}
-    const fabId=uid(),projetId=val("f_fproj");
-    const mv=Object.keys(tot).map(i=>mvt(art(i),-tot[i],"fabrication",{ref:fabId,projetId}));
-    const fab={date:new Date().toISOString(),leurreId:l.id,nom:l.nom,version:l.version||"",n,projetId,cout:Math.round(coutLeurre(l)*n*100)/100,coutImp:Math.round(coutImp(l)*n*100)/100,
-      conso:Object.keys(tot).map(i=>({articleId:i,nom:nomArt(art(i)),qte:Math.round(tot[i]*1000)/1000,unite:art(i).unite||""})),mvtIds:mv.map(m=>m.id)};
-    dlg.close();
-    try{await store.batch([...Object.entries(tot).map(([i,q])=>({op:"inc",c:"articles",id:i,d:-q})),{op:"set",c:"fabrications",id:fabId,data:fab},...mv]);toast(n+" × "+l.nom+" fabriqué"+(n>1?"s":"")+", stock déduit")}
-    catch(e){toast("Échec, stock inchangé ("+(e.code||"erreur")+")")}
-  };
+    return{id:l.id||uid(),nom:val("f_nom"),version:val("f_ver")||"V1",corps:val("f_corps"),nage:val("f_nage"),longueur:num("f_long"),poids:num("f_poids"),impH:parseDuree($("#f_imph").value),moH:parseDuree($("#f_moh").value),prixVente:num("f_pv"),coloris:val("f_col").split(",").map(x=>x.trim()).filter(Boolean),parPlateau:Math.max(1,Math.round(num("f_ppl"))||1),liens:liensSaisis(),notes:val("f_notes"),bom:tmpBom.filter(b=>b.articleId).map(b=>({articleId:b.articleId,qte:pnum(b.qte)}))}});
   dlg.showModal();
 }
 function drawBom(){
@@ -774,9 +1136,9 @@ function drawBom(){
 }
 function majProfil(x){const z=$("#profil");if(!z)return;const m=matiereImp(x),f=filById(m);
   z.innerHTML=f?`Profil K2 Plus pour ${esc(f.nom)} : buse ${f.buse}, plateau ${f.plateau}, ${f.chauffe?"<b>enceinte chauffée</b>":"enceinte non chauffée"}, environ ${wattsMat(m)} W pendant l'impression.`:"Ajoute un filament dans la nomenclature pour que l'app adapte la consommation électrique au matériau."}
-function majCout(){const x={bom:tmpBom,corps:$("#f_corps")?.value,impH:$("#f_imph")?parseDuree($("#f_imph").value):0,moH:$("#f_moh")?parseDuree($("#f_moh").value):0,prixVente:$("#f_pv")?num("f_pv"):0},c=couts(x);
+function majCout(){const x={bom:tmpBom,parPlateau:$("#f_ppl")?num("f_ppl"):1,corps:$("#f_corps")?.value,impH:$("#f_imph")?parseDuree($("#f_imph").value):0,moH:$("#f_moh")?parseDuree($("#f_moh").value):0,prixVente:$("#f_pv")?num("f_pv"):0},c=couts(x);
   majProfil(x);
-  const parts=[["matières",c.mat],["impression",c.imp],["main d'œuvre",c.mo],["emballage",c.emb]].filter(p=>p[1]>0);
+  const parts=[["matières (purge comprise)",c.mat],["impression",c.imp],["main d'œuvre",c.mo],["emballage",c.emb]].filter(p=>p[1]>0);
   $("#cout").innerHTML=`Coût de revient : <b>${eur(c.total)}</b>${parts.length>1?` (${parts.map(p=>p[0]+" "+eur(p[1])).join(" + ")})`:""}`+
     (x.prixVente>0?`<br>Marge en main propre : <b class="${c.margeMP<0?"st-crit":""}">${eur(c.margeMP)}</b> (${fmt(c.tauxMP,0)} % du prix)`:"")+
     `<br>Prix conseillé (${fmt(REG().margeVisee??30,0)} % de marge) : <b>${eur(c.conseille)}</b>`}
@@ -869,19 +1231,20 @@ function vListeVentes(){
   const V=[...S.ventes].sort((a,b)=>(b.date||"").localeCompare(a.date||""));
   const F=V.filter(v=>ventesFiltre==="toutes"||(ventesFiltre==="apayer"&&!v.payee)||(ventesFiltre==="aexp"&&!v.expediee&&v.livraison!=="main"));
   const nA=V.filter(v=>!v.payee).length,nE=V.filter(v=>!v.expediee&&v.livraison!=="main").length;
-  const stock=S.leurres.map(l=>({l,d:dispo(l.id)})).filter(x=>x.d>0);
+  const stock=S.leurres.flatMap(l=>clesStock(l.id).map(c=>({l,c,d:dispoC(l.id,c)}))).filter(x=>x.d>0);
   return`<div class="filters" style="margin-top:.75rem"><button aria-pressed="${ventesFiltre==="toutes"}" onclick="ventesFiltre='toutes';render()">Toutes</button><button aria-pressed="${ventesFiltre==="apayer"}" onclick="ventesFiltre='apayer';render()">À encaisser (${nA})</button><button aria-pressed="${ventesFiltre==="aexp"}" onclick="ventesFiltre='aexp';render()">À expédier (${nE})</button></div>
-  <section class="block"><h2>Leurres prêts à vendre</h2>${stock.length?`<div class="chips">${stock.map(x=>`<button type="button" onclick="editVente(null,'${x.l.id}')">${esc(x.l.nom)} ${esc(x.l.version||"")} : ${x.d}</button>`).join("")}</div>`:`<p class="sub">Aucun leurre en stock. Les leurres apparaissent ici quand tu les fabriques depuis leur fiche.</p>`}</section>
+  <section class="block"><h2>Leurres prêts à vendre</h2>${stock.length?`<div class="chips">${stock.map(x=>`<button type="button" onclick="editVente(null,'${x.l.id}','${esc(x.c)}')">${esc(x.l.nom)} ${esc(x.l.version||"")}${x.c?" "+esc(x.c):""} : ${x.d}</button>`).join("")}</div>`:`<p class="sub">Aucun leurre en stock. Les leurres apparaissent ici quand tu les fabriques depuis leur fiche.</p>`}</section>
   <section class="block"><h2>Ventes</h2><div class="list">${F.length?F.slice(0,300).map(v=>{const m=margeV(v);return`<div class="row click" onclick="editVente('${v.id}')"><div class="grow"><h3>${esc(v.nom)} ${esc(v.version||"")} × ${v.qte}</h3><div class="sub">${v.date?new Date(v.date).toLocaleDateString("fr-FR"):""}, ${esc(v.canal)}${v.client?", "+esc(v.client):""}</div>
     <div class="chips" style="margin-top:.3rem">${!v.payee?`<span class="pill alert">À encaisser</span>`:""}${!v.expediee&&v.livraison!=="main"?`<span class="pill acc">À expédier</span>`:""}</div></div>
     <div style="text-align:right"><div class="num"><b>${eur(ca(v))}</b></div><div class="sub num ${m<0?"st-crit":""}">marge ${eur(m)}</div></div></div>`}).join(""):`<div class="empty">${V.length?"Aucune vente dans ce filtre.":"Aucune vente. Clique sur Nouvelle vente, ou sur un leurre prêt à vendre."}</div>`}</div></section>`;
 }
 let venteTmp=null;
-function editVente(id,lid){
-  const v=S.ventes.find(x=>x.id===id)||{date:new Date().toISOString().slice(0,10),leurreId:lid||"",qte:1,canal:"Main propre",livraison:"main",payee:true,expediee:false};
+function editVente(id,lid,col){
+  const v=S.ventes.find(x=>x.id===id)||{date:new Date().toISOString().slice(0,10),leurreId:lid||"",coloris:col||"",qte:1,canal:"Main propre",livraison:"main",payee:true,expediee:false};
   const L=[...S.leurres].sort((a,b)=>a.nom.localeCompare(b.nom));
   body.innerHTML=`<h2>${id?"Modifier la vente":"Nouvelle vente"}</h2>
   <label>Leurre<select id="v_l" onchange="majVente(true)"><option value="">Choisir</option>${L.map(l=>`<option value="${l.id}" ${l.id===v.leurreId?"selected":""}>${esc(l.nom)} ${esc(l.version||"")} (${dispo(l.id)+(l.id===v.leurreId&&id?Number(v.qte)||0:0)} en stock)</option>`).join("")}</select></label>
+  <label id="v_coll">Coloris<select id="v_col" onchange="majVente()"></select></label>
   <div class="grid2"><label>Quantité<input id="v_q" type="text" inputmode="numeric" value="${vIn(v.qte)}" oninput="majVente()"></label>
   <label>Prix unitaire (€)<input id="v_p" type="text" inputmode="decimal" value="${vIn(v.prixUnit??"")}" oninput="majVente()"></label>
   <label>Canal<select id="v_c" onchange="majVente(false,true)">${canaux().map(c=>`<option ${c.nom===v.canal?"selected":""}>${esc(c.nom)}</option>`).join("")}${canaux().some(c=>c.nom===v.canal)?"":`<option selected>${esc(v.canal)}</option>`}</select></label>
@@ -896,11 +1259,11 @@ function editVente(id,lid){
   venteTmp={v,id};majVente(!id);
   wire("ventes",id,()=>{const l=S.leurres.find(x=>x.id===val("v_l"));if(!l){toast("Choisis le leurre vendu");return}
     const q=Math.max(1,Math.round(num("v_q")||1)),p=num("v_p");if(!(p>=0)){toast("Indique le prix");return}
-    const d=dispo(l.id)+(id&&v.leurreId===l.id?Number(v.qte)||0:0);
-    if(q>d&&!confirm(`Il ne reste que ${d} ${l.nom} en stock (fabriqués moins vendus). Enregistrer quand même ?`))return;
-    const r=calcVente();
-    return{id:v.id||uid(),date:val("v_d"),leurreId:l.id,nom:l.nom,version:l.version||"",qte:q,prixUnit:p,canal:val("v_c"),commission:r.com,port:r.port,cotis:r.cotis,
-      coutUnit:id&&v.leurreId===l.id&&v.coutUnit!=null?v.coutUnit:Math.round(coutUnitFab(l)*100)/100,livraison:val("v_liv"),payee:$("#v_pay").checked,expediee:val("v_liv")==="main"?true:$("#v_exp").checked,client:val("v_cl"),notes:val("v_n")}});
+    const col=$("#v_col").value,ex=id?{c:"ventes",id}:null,d=restesFab(l.id,col,ex).lots.reduce((s,x)=>s+x.reste,0)-restesFab(l.id,col,ex).depasse;
+    if(q>d&&!confirm(`Il ne reste que ${Math.max(0,d)} ${l.nom}${col?" "+col:""} en stock. Enregistrer quand même ?`))return;
+    const r=calcVente(),garde=id&&v.leurreId===l.id&&(v.coloris||"")===col&&Number(v.qte)===q&&v.coutUnit!=null,fa=garde?null:allocFifo(l.id,col,q,ex);
+    return{id:v.id||uid(),date:val("v_d"),leurreId:l.id,nom:l.nom,version:l.version||"",coloris:col,alloc:garde?(v.alloc||[]):fa.alloc,qte:q,prixUnit:p,canal:val("v_c"),commission:r.com,port:r.port,cotis:r.cotis,
+      coutUnit:garde?v.coutUnit:r2(fa.cu),livraison:val("v_liv"),payee:$("#v_pay").checked,expediee:val("v_liv")==="main"?true:$("#v_exp").checked,client:val("v_cl"),notes:val("v_n")}});
   dlg.showModal();
 }
 function calcVente(){const q=Math.max(1,Math.round(num("v_q")||1)),p=num("v_p"),c=canal(val("v_c")),tot=q*p;
@@ -909,15 +1272,20 @@ function calcVente(){const q=Math.max(1,Math.round(num("v_q")||1)),p=num("v_p"),
 function majVente(leurreChange,canalChange){
   const l=S.leurres.find(x=>x.id===val("v_l"));
   if(leurreChange&&l&&!$("#v_p").value.trim()&&l.prixVente)$("#v_p").value=vIn(l.prixVente);
+  const vt=venteTmp,ex=vt.id?{c:"ventes",id:vt.id}:null;
+  if(leurreChange!==undefined||!$("#v_col").options.length){const cur=$("#v_col").value||(l&&l.id===vt.v.leurreId?vt.v.coloris||"":"");const cs=l?[...new Set([...clesStock(l.id).filter(c=>{const r=restesFab(l.id,c,ex);return r.lots.reduce((s,x)=>s+x.reste,0)-r.depasse>0}),...(l.id===vt.v.leurreId&&vt.id?[vt.v.coloris||""]:[])])]:[];
+    $("#v_col").innerHTML=(cs.length?cs:[""]).map(c=>{const r=l?restesFab(l.id,c,ex):null,n=r?r.lots.reduce((s,x)=>s+x.reste,0)-r.depasse:0;return`<option value="${esc(c)}" ${c===cur?"selected":""}>${esc(c||"Sans coloris")}${l?" ("+Math.max(0,n)+" en stock)":""}</option>`}).join("");
+    $("#v_coll").style.display=cs.length>1||(cs[0]||"")!==""?"":"none"}
   if(canalChange)delete $("#v_com").dataset.manuel;
   const r=calcVente();if(!$("#v_com").dataset.manuel)$("#v_com").value=vIn(r.com);
   $("#v_expl").style.display=val("v_liv")==="main"?"none":"";
   $("#v_port").disabled=val("v_liv")==="main";
-  const cu=l?(venteTmp.id&&venteTmp.v.leurreId===l.id&&venteTmp.v.coutUnit!=null?venteTmp.v.coutUnit:coutUnitFab(l)):0,marge=r.tot-r.com-r.port-r.cotis-r.q*cu;
+  const col=$("#v_col").value,garde=vt.id&&vt.v.leurreId===l?.id&&(vt.v.coloris||"")===col&&Number(vt.v.qte)===r.q&&vt.v.coutUnit!=null,fa=l&&!garde?allocFifo(l.id,col,r.q,ex):null;
+  const cu=l?(garde?vt.v.coutUnit:fa.cu):0,marge=r.tot-r.com-r.port-r.cotis-r.q*cu;
   $("#v_rec").innerHTML=l?`<div class="mv"><span class="mv-n">Chiffre d'affaires</span><span class="mv-c num">${eur(r.tot)}</span></div>
     <div class="mv"><span class="mv-n">Commission et frais<small>${esc(val("v_c"))}</small></span><span class="mv-c num">− ${eur(r.com+r.port)}</span></div>
     ${r.cotis?`<div class="mv"><span class="mv-n">Cotisations estimées</span><span class="mv-c num">− ${eur(r.cotis)}</span></div>`:""}
-    <div class="mv"><span class="mv-n">Coût de revient<small>${fmt(r.q)} × ${eur(cu)}, coût complet ${venteTmp.id?"au moment de la vente":"actuel"}</small></span><span class="mv-c num">− ${eur(r.q*cu)}</span></div>
+    <div class="mv"><span class="mv-n">Coût de revient<small>${fmt(r.q)} × ${eur(cu)}, coût réel ${garde?"enregistré":(fa.alloc.length?"du lot "+fa.alloc.map(a=>a.lot).join(", "):"actuel (aucun lot en stock)")}</small></span><span class="mv-c num">− ${eur(r.q*cu)}</span></div>
     <div class="mv"><span class="mv-n"><b>Marge</b></span><span class="mv-c num ${marge<0?"st-crit":"st-ok"}"><b>${eur(marge)}</b></span></div>`:`<p class="sub">Choisis un leurre pour voir la marge.</p>`;
 }
 function vBilan(){
@@ -958,8 +1326,9 @@ function editReglages(){const r=REG();
   <div class="bandeau" style="margin:0"><span>Valeurs vérifiées : électricité au Tarif Bleu EDF (option Base, 1er août 2026), SMIC horaire brut (1er juin 2026), cotisations micro-entreprise vente de marchandises, frais Etsy 2026.</span><button type="button" class="btn sm" onclick="if(confirm('Remplacer tous les réglages par les valeurs recommandées ?'))majReglages({...DEF_REG,wattsMat:null}).then(()=>{dlg.close();toast('Valeurs recommandées appliquées');editReglages()})">Valeurs recommandées</button></div>
   <h3>Impression 3D (Creality K2 Plus)</h3>
   <div class="grid2"><label>Prix de l'électricité (€/kWh)<input id="r_kwh" type="text" inputmode="decimal" value="${vIn(r.kwh)}"></label>
-  <label>Usure et entretien (€/h)<input id="r_us" type="text" inputmode="decimal" value="${vIn(r.usure)}"></label></div>
-  <p class="sub" style="margin:0">0,2001 €/kWh : Tarif Bleu EDF option Base, 3 à 6 kVA, au 1er août 2026 (le même partout en métropole, Lorient compris). En heures creuses : 0,1589 €/kWh. Usure 0,05 €/h : estimation (buses, PEI, courroies).</p>
+  <label>Usure et entretien (€/h)<input id="r_us" type="text" inputmode="decimal" value="${vIn(r.usure)}"></label>
+  <label>Purge par impression (g)<input id="r_pg" type="text" inputmode="decimal" value="${vIn(r.purgeG)}"></label></div>
+  <p class="sub" style="margin:0">0,2001 €/kWh : Tarif Bleu EDF option Base, 3 à 6 kVA, au 1er août 2026 (le même partout en métropole, Lorient compris). En heures creuses : 0,1589 €/kWh. Usure 0,05 €/h : estimation (buses, PEI, courroies). Purge : Creality ne publie aucun chiffre ; 2 g par plateau est une estimation (la K2 Plus purge plusieurs fois au démarrage, hors G-code). Pèse le contenu de la goulotte après quelques impressions pour avoir ta vraie valeur. Les purges entre couleurs (CFS) sont déjà comptées dans le poids du G-code.</p>
   <div><span class="lbl">Puissance moyenne selon le filament (W)</span><div class="pw">${FIL.map(f=>`<label>${esc(f.id)}<input id="rw_${f.id}" type="text" inputmode="decimal" value="${vIn(r.wattsMat?.[f.id]??f.watts)}"><small>${f.chauffe?"enceinte chauffée":"sans chauffe"}</small></label>`).join("")}</div>
   <p class="sub" style="margin:.3rem 0 0">PLA et ABS/ASA : plages publiées pour la K2 Plus (150–200 W, 300–400 W). Autres : estimations. Un wattmètre sur la prise donne ta vraie valeur.</p></div>
   <h3>Coûts et ventes</h3>
@@ -972,7 +1341,7 @@ function editReglages(){const r=REG();
   <div id="r_can" style="display:flex;flex-direction:column;gap:.4rem"></div>
   <button type="button" class="btn ghost sm" onclick="tmpCan.push({nom:'',pct:0,fixe:0});drawCan()">Ajouter un canal</button>
   <p class="sub" style="margin:0">Dernier export : ${r.dernierExport?new Date(r.dernierExport).toLocaleDateString("fr-FR"):"jamais"}.</p>
-  <div class="actions"><span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" onclick="majReglages({kwh:num('r_kwh'),usure:num('r_us'),wattsMat:Object.fromEntries(FIL.map(f=>[f.id,num('rw_'+f.id)])),tauxHoraire:num('r_th'),emballage:num('r_emb'),margeVisee:num('r_mv'),urssaf:num('r_urs'),canaux:tmpCan.filter(c=>(c.nom||'').trim()).map(c=>({nom:c.nom.trim(),pct:pnum(c.pct),fixe:pnum(c.fixe)}))}).then(()=>{dlg.close();toast('Réglages enregistrés')})">Enregistrer</button></div>`;
+  <div class="actions"><span class="spacer"></span><button class="btn ghost" onclick="dlg.close()">Annuler</button><button class="btn" onclick="majReglages({kwh:num('r_kwh'),usure:num('r_us'),purgeG:num('r_pg'),wattsMat:Object.fromEntries(FIL.map(f=>[f.id,num('rw_'+f.id)])),tauxHoraire:num('r_th'),emballage:num('r_emb'),margeVisee:num('r_mv'),urssaf:num('r_urs'),canaux:tmpCan.filter(c=>(c.nom||'').trim()).map(c=>({nom:c.nom.trim(),pct:pnum(c.pct),fixe:pnum(c.fixe)}))}).then(()=>{dlg.close();toast('Réglages enregistrés')})">Enregistrer</button></div>`;
   tmpCan=JSON.parse(JSON.stringify(canaux()));drawCan();dlg.showModal();
 }
 
@@ -995,24 +1364,20 @@ const MODELES=[
   colonnes:["Poids du leurre (g)","Bas de ligne typique","Résistance visée","Owner Hyper Wire","Owner Ultra (gros poissons)"],
   lignes:[["10–20","20–30 lb (9–14 kg)","≥ 45 lb (20 kg)","#3–#4 (45–50 lb)","—"],["20–30","30–40 lb (14–18 kg)","≥ 50 lb (23 kg)","#4–#5 (50–60 lb)","—"],["30–45","40–60 lb (18–27 kg)","≥ 70 lb (32 kg)","#6–#7 (70–80 lb)","—"],["45–60","60–80 lb (27–36 kg)","≥ 110 lb (50 kg)","#8 (120 lb)","#5 (110 lb)"],["60–80","80–100 lb (36–45 kg)","≥ 150 lb (68 kg)","#9 (170 lb)","#6 (150 lb)"],["80–110","100–130 lb (45–59 kg)","≥ 220 lb (100 kg)","#10–#11 (220–250 lb)","#7–#8 (215–240 lb)"],["110–150","130–200 lb (59–91 kg)","≥ 320 lb (145 kg)","—","#9–#10 (320–370 lb)"]],
   source:"https://discounttackle.com/products/owner-hyperwire-stainless-steel-split-rings",
-  notes:"Diamètres Hyper Wire (int./ext.) : #3 4,5/6 mm, #4 5/7, #5 5,5/7,5, #6 6/8, #7 7/9, #8 8/11 mm. Le triple doit pouvoir pivoter librement : un anneau trop petit bloque l'hameçon, trop gros il s'emmêle. Résistances Owner Ultra : tomostackle.com. Les « résistance visée » sont une règle déduite, pas une norme."},
- {cle:"carpenter-bluefish",titre:"Préconisations fabricant : Carpenter Blue Fish",categorie:"Hameçons",
-  description:"Valeurs publiées pour des stickbaits de référence, utiles pour caler tes propres modèles par comparaison.",
-  colonnes:["Modèle","Longueur (mm)","Poids (g)","Hameçons préconisés","Anneau brisé"],
-  lignes:[["BF75-180","180","62–75","Triples 2/0–3/0 avant, 1/0–2/0 arrière ; simples inline 5/0–7/0","—"],["BF100-200","200","95","≈ 9 g par hameçon (ST-66 4/0)","Carpenter SR 250 lb"],["BF140-225","225","137","≈ 11 g par hameçon (ST-66 5/0)","Carpenter SR 350 lb"]],
-  source:"https://gtfightclub.com/products/carpenter-blue-fish-bf100-topwater-stickbait-lures",
-  notes:"Sources : fiches produit GT Fight Club (BF100-200, BF140-225) et Pêchextrême (BF75-180)."}
+  notes:"Diamètres Hyper Wire (int./ext.) : #3 4,5/6 mm, #4 5/7, #5 5,5/7,5, #6 6/8, #7 7/9, #8 8/11 mm. Le triple doit pouvoir pivoter librement : un anneau trop petit bloque l'hameçon, trop gros il s'emmêle. Résistances Owner Ultra : tomostackle.com. Les « résistance visée » sont une règle déduite, pas une norme."}
 ];
-const OBSOLETES=["hamecons-taille","st66-poids"];
+const OBSOLETES=["hamecons-taille","st66-poids","carpenter-bluefish"];
 function vRefs(){
   if(refSel==="especes"||refSel==="especes-fr")return vEspeces("fr");
   if(refSel==="especes-nc")return vEspeces("nc");
   if(refSel==="filaments")return vFilaments();
+  if(String(refSel).startsWith("recette-")){const l=S.leurres.find(x=>x.id===refSel.slice(8));if(l)return vRecette(l);refSel=null}
   if(refSel){const r=S.refs.find(x=>x.id===refSel);if(r)return `<button class="back" onclick="refSel=null;render()">‹ Références</button>`+refCard(r);refSel=null}
   const q=(window._rq||"").toLowerCase();
   const items=[{id:"especes-fr",titre:"Proies et prédateurs (France)",categorie:"Pêche",description:"Ce que mange chaque espèce, en mer et en eau douce, avec photos et robe des poissons fourrage.",n:ESP.filter(e=>zoneDe(e)==="fr").length+" espèces"},
     {id:"filaments",titre:"Filaments d'impression 3D",categorie:"Impression 3D",description:"PLA, PETG, ABS, ASA, TPU, PC, PA-CF : avantages, inconvénients, réglages K2 Plus et usage pour les leurres.",n:FIL.length+" matériaux"},
     {id:"especes-nc",titre:"Proies et prédateurs (Nouvelle-Calédonie)",categorie:"Pêche",description:"Lagon, récif et large : ce que mangent carangues, thazards, thons, wahoos et marlins.",n:ESP.filter(e=>zoneDe(e)==="nc").length+" espèces"},
+    ...S.leurres.map(l=>({id:"recette-"+l.id,titre:"Recette : "+l.nom+" "+(l.version||""),categorie:"Recettes de fabrication",description:[(l.bom||[]).length+" composant"+((l.bom||[]).length>1?"s":""),"coût "+eur(coutLeurre(l)),(()=>{const n=new Set(S.fabrications.filter(f=>f.leurreId===l.id&&(f.recette||[]).length).map(f=>f.prodId||f.id)).size;return n?n+" lot"+(n>1?"s":"")+" mesuré"+(n>1?"s":""):"aucun lot mesuré"})()].join(" · "),n:"automatique"})),
     ...S.refs.map(r=>({id:r.id,titre:r.titre,categorie:r.categorie||"Divers",description:r.description||"",n:(r.lignes||[]).length+" ligne"+((r.lignes||[]).length>1?"s":"")}))]
     .filter(r=>!q||(r.titre+" "+r.categorie+" "+r.description).toLowerCase().includes(q));
   const cats=[...new Set(items.map(i=>i.categorie))].sort((a,b)=>a.localeCompare(b));
@@ -1020,7 +1385,7 @@ function vRefs(){
   const vieux=S.refs.filter(r=>OBSOLETES.includes(r.cle));
   return head("Références",`<button class="btn" onclick="editRef()">Nouveau tableau</button>`)+
   `<input class="search" type="search" placeholder="Rechercher un sujet" value="${esc(window._rq||"")}" oninput="window._rq=this.value;clearTimeout(window._rt);window._rt=setTimeout(()=>{render();const i=$('.search');i.focus();i.setSelectionRange(i.value.length,i.value.length)},250)" aria-label="Rechercher">`+
-  (vieux.length?`<div class="bandeau"><span>Une nouvelle version des tableaux d'hameçons est disponible (triples et simples séparés, anneaux brisés).</span><button class="btn sm" onclick="majModeles()">Mettre à jour</button></div>`:"")+
+  (vieux.length?`<div class="bandeau"><span>Nettoyage des références : garder uniquement les tableaux triples, simples et anneaux brisés (les anciens tableaux d'hameçons et la fiche Carpenter sont retirés, leurs valeurs sont déjà intégrées).</span><button class="btn sm" onclick="majModeles()">Nettoyer</button></div>`:"")+
   (manquants.length&&!vieux.length?`<div class="list" style="margin-bottom:1.25rem"><div class="row"><div class="grow">Tableaux de départ disponibles<div class="sub">${manquants.map(m=>esc(m.titre)).join(", ")}</div></div><button class="btn ghost sm" onclick="ajouterModeles()">Ajouter</button></div></div>`:"")+
   (items.length?cats.map(c=>`<section class="block"><h2 class="grp">${esc(c)}</h2><div class="list">${items.filter(i=>i.categorie===c).sort((a,b)=>a.titre.localeCompare(b.titre)).map(i=>`<div class="row click" role="button" tabindex="0" onclick="ouvrirRef('${i.id}')" onkeydown="if(event.key==='Enter')ouvrirRef('${i.id}')"><div class="grow"><h3>${esc(i.titre)}</h3>${i.description?`<div class="sub" style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(i.description)}</div>`:""}</div><span class="sub num">${esc(i.n)}</span></div>`).join("")}</div></section>`).join("")
   :`<div class="list"><div class="empty">Aucun sujet ne correspond.</div></div>`);
@@ -1129,6 +1494,21 @@ async function changerPhoto(id){
   if(v&&!/^https:\/\//.test(v)){toast("Colle une adresse d'image commençant par https://");return}
   if(v)await save("photos",{id,url:v});else await remove("photos",id);
   toast(v?"Photo enregistrée":"Photo d'origine rétablie");setTimeout(()=>ficheEsp(id),300);
+}
+function vRecette(l){const fs=S.fabrications.filter(f=>f.leurreId===l.id).sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  const mes={};fs.filter(f=>(f.recette||[]).length).forEach(f=>f.recette.forEach(r=>(mes[r.articleId]??=[]).push(Number(r.reelU)||0)));
+  const c=couts(l),m=matiereImp(l),fi=filById(m),bom=(l.bom||[]).filter(b=>art(b.articleId));
+  const lig=bom.map(b=>{const a=art(b.articleId),q=pnum(b.qte),v=mes[b.articleId]||[],moy=v.length?v.reduce((s,x)=>s+x,0)/v.length:null,ec=moy!=null&&q>0?(moy-q)/q*100:null,k=ec===null?"":Math.abs(ec)<=5?"ok":Math.abs(ec)<=15?"warn":"crit";
+    return`<tr><td>${dot(a)}${esc(nomArt(a))}</td><td class="n">${fmt(q,3)} ${esc(a.unite)}</td><td class="n">${moy===null?"—":fmt(moy,3)+" "+esc(a.unite)+` <span class="sub">(${v.length})</span>`}</td><td class="n">${ec===null?"—":`<span class="st-${k}">${ICO_NIV[k]} ${ec>0?"+":""}${fmt(ec,0)} %</span>`}</td><td class="n">${eur(coutFifo(b.articleId,q))}</td></tr>`}).join("");
+  const lots=groupesProd().filter(g=>g.fs.some(f=>f.leurreId===l.id)).slice(0,10);
+  return`<button class="back" onclick="refSel=null;render()">‹ Références</button>`+head("Recette : "+esc(l.nom)+` <span class="pill">${esc(l.version||"V1")}</span>`,`<div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" onclick="editLeurre('${l.id}')">Modifier la fiche</button><button class="btn" onclick="editProduction('${l.id}')">Lancer une production</button></div>`)+
+  `<p class="sub" style="margin-top:0">Fiche créée automatiquement depuis la fiche leurre et les productions : elle se met à jour toute seule.</p>
+  <div class="kpis kpis3"><div class="kpi"><strong class="num">${eur(c.total)}</strong><span>coût de revient actuel</span></div><div class="kpi"><strong class="num">${eur(c.conseille)}</strong><span>prix conseillé</span></div><div class="kpi"><strong class="num">${fabTot(l.id)}</strong><span>fabriqués</span></div></div>
+  <section class="block"><h2>Caractéristiques</h2><div class="list"><div class="row"><div class="grow">${[l.corps&&"Corps "+l.corps,l.longueur&&l.longueur+" mm",l.poids&&l.poids+" g",l.nage].filter(Boolean).map(esc).join(" · ")||"À compléter dans la fiche"}${(l.coloris||[]).length?`<div class="sub">Coloris : ${l.coloris.map(esc).join(", ")}</div>`:""}</div></div></div></section>
+  <section class="block"><h2>Composants pour 1 leurre</h2>${bom.length?`<div class="tw"><table class="ref"><thead><tr><th>Composant</th><th>Nomenclature</th><th>Moyenne réelle (lots)</th><th>Écart</th><th>Coût</th></tr></thead><tbody>${lig}</tbody></table></div><p class="sub">Moyenne réelle : quantités saisies dans le carnet de recettes à chaque production. ${ICO_NIV.ok} écart ≤ 5 %, ${ICO_NIV.warn} ≤ 15 %, ${ICO_NIV.crit} au-delà : ajuste la nomenclature depuis la fiche.</p>`:`<p class="sub">Aucun composant : remplis la nomenclature dans la fiche leurre.</p>`}</section>
+  <section class="block"><h2>Impression (Creality K2 Plus)</h2><div class="list"><div class="row"><div class="grow">${fi?`${esc(fi.nom)} : buse ${fi.buse}, plateau ${fi.plateau}, ${fi.chauffe?"<b>enceinte chauffée</b>":"enceinte non chauffée"}, environ ${wattsMat(m)} W`:"Pas de filament dans la nomenclature"}<div class="sub">${pnum(l.impH)?fmt(l.impH)+" h par leurre":"Temps d'impression non renseigné"} · ${Math.max(1,Math.round(pnum(l.parPlateau))||1)} par plateau · purge ${fmt(REG().purgeG)} g par plateau</div></div></div></div></section>
+  <section class="block"><h2>Main d'œuvre et finition</h2><div class="list"><div class="row"><div class="grow">${pnum(l.moH)?fmt(l.moH)+" h par leurre ("+eur(c.mo)+")":"Temps de main d'œuvre non renseigné"}${l.notes?`<div class="sub" style="white-space:pre-wrap">${esc(l.notes)}</div>`:""}</div></div></div></section>
+  <section class="block"><h2>Derniers lots</h2><div class="list">${lots.length?lots.map(g=>{const f=g.fs.filter(x=>x.leurreId===l.id);return`<div class="row"><div class="grow"><span class="pill">${esc(g.lot)}</span> ${new Date(g.date).toLocaleDateString("fr-FR")}<div class="sub">${f.map(x=>(x.coloris?esc(x.coloris)+" : ":"")+(x.ratee?"raté":x.n+(x.lancees&&x.lancees!==x.n?"/"+x.lancees:"")+" réussi"+(x.n>1?"s":""))).join(", ")}</div></div><span class="num">${f[0]&&f[0].coutUnit!=null?eur(f[0].coutUnit)+" pièce":""}</span></div>`}).join(""):`<div class="empty">Aucune production pour ce leurre.</div>`}</div></section>`;
 }
 function refCard(r){
   const cols=r.colonnes||[],rows=(r.lignes||[]).map(x=>x.v||[]);
