@@ -98,6 +98,7 @@ input[type=checkbox]{width:1.2rem;height:1.2rem;flex:none;padding:0}
 .actions .spacer{flex:1}
 .bomline,.task{display:flex;gap:.5rem;align-items:center}
 .bomline select{flex:1}.bomline input{width:5.5rem}
+.poignee{border:0;background:none;color:var(--muted);padding:.35rem .25rem;cursor:grab;touch-action:none;display:flex;align-items:center;border-radius:4px}.poignee:active{cursor:grabbing}.task.glisse{background:var(--chip);border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,.18);position:relative;z-index:1}
 .task input[type=text]{flex:1}.task input[type=checkbox]{width:1.2rem;height:1.2rem}
 .x{border:0;background:none;color:var(--muted);font-size:1.3rem;padding:0 .3rem}
 .toast{position:fixed;left:50%;bottom:calc(5rem + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:.6rem 1rem;border-radius:8px;font-size:.95rem;opacity:0;transition:opacity .2s;pointer-events:none;z-index:9}
@@ -240,6 +241,26 @@ table.couts td.n svg{vertical-align:-1px}
 @media (max-width:520px){.pm{grid-template-columns:1fr}}
 .kpis.kpis3{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media (max-width:760px){.seg{display:grid;grid-template-columns:repeat(auto-fit,minmax(6.6rem,1fr));width:100%}.seg button{white-space:normal;line-height:1.15;padding:.5rem .35rem}}
+.ct-besoin{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:.6rem .9rem;margin:0 0 1rem}
+.ct-steps{margin-bottom:1rem}.ct-steps .ct-n{display:inline-grid;place-items:center;width:1.3rem;height:1.3rem;border-radius:50%;background:var(--chip);color:var(--ink);font-size:.75rem;margin-right:.2rem}.ct-steps button[aria-pressed="true"] .ct-n{background:var(--accent);color:var(--accent-ink)}.ct-c{font-size:.75rem;opacity:.75}
+.ct-add{display:flex;gap:.5rem}.ct-add input{flex:1;min-width:0}
+.postits{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.75rem;margin-top:.75rem}
+.postit{border-radius:6px;padding:.5rem;display:flex;flex-direction:column;gap:.35rem;box-shadow:0 1px 3px rgba(0,0,0,.12);background:var(--pi0);color:#1f1a10}
+.postit textarea{background:transparent;border:0;resize:vertical;min-height:4rem;padding:.2rem;font-size:.95rem;color:inherit}.postit input{background:rgba(255,255,255,.45);border:0;font-size:.8rem;padding:.25rem .4rem;color:inherit}
+.pi0{--pi0:#fff3b0}.pi1{--pi0:#ffd6a5}.pi2{--pi0:#caffbf}.pi3{--pi0:#a0e7ff}.pi4{--pi0:#e2c6ff}.pi5{--pi0:#ffc6d9}
+.pi-b{display:flex;align-items:center;gap:.15rem;flex-wrap:wrap}.pi-b .spacer{flex:1}.pi-v,.pi-a{border:0;background:rgba(255,255,255,.5);border-radius:4px;padding:.15rem .4rem;font-size:.78rem;color:#1f1a10}.pi-v{font-weight:700}
+.ct-pv{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:1rem;align-items:start;margin-top:.5rem}@media (max-width:760px){.ct-pv{grid-template-columns:1fr}}
+.pv{width:100%;max-width:560px;display:block;margin:0 auto;background:var(--panel);border:1px solid var(--line);border-radius:10px;--fp:#2a78d6;--fc:#eb6834}
+.pv-c{fill:var(--accent);stroke:none}.pv-ct{fill:var(--accent-ink);font:700 13px Barlow,sans-serif;text-anchor:middle}
+.pv-el rect{fill:var(--bg);stroke:var(--line);stroke-width:1.5}.pv-el text{fill:var(--ink);font:500 11.5px Barlow,sans-serif;text-anchor:middle;pointer-events:none}.pv-el{cursor:pointer}.pv-el:hover rect,.pv-el:focus rect{stroke:var(--ink)}.pv-el:focus{outline:none}.pv-el.sel rect{stroke:var(--accent);stroke-width:3;fill:color-mix(in srgb,var(--accent) 18%,var(--bg))}
+.pv-fp{fill:none;stroke:var(--fp);stroke-width:2.2}.pv-fc{stroke:var(--fc);stroke-width:2.2;stroke-dasharray:5 4}.pv-lb{font:700 11px Barlow,sans-serif;text-anchor:middle;paint-order:stroke;stroke:var(--panel);stroke-width:4px;fill:var(--muted)}.pv-lfp{fill:var(--fp)}.pv-lfc{fill:var(--fc)}
+.ct-leg{display:inline-block;width:1.2rem;height:0;vertical-align:middle;border-top:2.5px solid #2a78d6}.ct-legfc{border-top:2.5px dashed #eb6834}
+.pill.ct-fp{background:color-mix(in srgb,#2a78d6 18%,transparent);color:#1f5fae}.pill.ct-fc{background:color-mix(in srgb,#eb6834 18%,transparent);color:#b4471b}
+.ct-selp{display:flex;flex-direction:column;gap:.5rem}
+.ct-cc{margin-top:.75rem}.ct-cdcf,.ct-cc{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:.75rem}.ct-cc .bloc{display:flex;flex-direction:column;gap:.5rem}.ct-ret{border-color:var(--ok);box-shadow:inset 3px 0 0 var(--ok)}
+.ct-mx select.ct-note{width:auto;padding:.2rem .35rem}.ct-mx td{vertical-align:middle}.ct-tot td{background:var(--chip)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pv{--fp:#3987e5;--fc:#d95926}:root:not([data-theme="light"]) .pill.ct-fp{color:#8dbdf5}:root:not([data-theme="light"]) .pill.ct-fc{color:#f3a07a}}
+:root[data-theme="dark"] .pv{--fp:#3987e5;--fc:#d95926}:root[data-theme="dark"] .pill.ct-fp{color:#8dbdf5}:root[data-theme="dark"] .pill.ct-fc{color:#f3a07a}
 .mo{display:none}@media (max-width:760px){.mh{display:none}.mo{display:inline}}
 .pese{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin-top:.4rem}.pese label,.pese input{min-width:0}.pese input{box-sizing:border-box;width:100%;max-width:100%}
 @media (max-width:760px){.kpis.kpis3 .kpi{padding:.7rem}.kpis.kpis3 .kpi strong{font-size:1.45rem}.kpis.kpis3 .kpi span{font-size:.78rem}.seg button{font-size:.88rem}}
@@ -399,10 +420,11 @@ const dot=a=>a?.teinte?`<span aria-hidden="true" style="display:inline-block;wid
 const avancement=p=>{const t=p.taches||[];return t.length?Math.round(100*t.filter(x=>x.fait).length/t.length):0};
 
 /* ---------- Rendu ---------- */
-function render(){
-  document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.view===view?"page":"false"));
+function render(force){
+  if(!force&&view==="conception"){const a=document.activeElement;if(a&&$("#main").contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)){renderAttente=true;return}}
+  document.querySelectorAll("nav .tab").forEach(b=>b.setAttribute("aria-current",b.dataset.view===(view==="conception"?"projets":view)?"page":"false"));
   document.querySelector("nav.side").hidden=["login","config","erreur","chargement"].includes(view);
-  $("#main").innerHTML=({accueil:vAccueil,projets:vProjets,leurres:vLeurres,stock:vStock,refs:vRefs,ventes:vVentes,login:vLogin,config:vConfig,erreur:vErreur,chargement:()=>`<p class="sub">Chargement…</p>`})[view]();
+  $("#main").innerHTML=({accueil:vAccueil,projets:vProjets,leurres:vLeurres,stock:vStock,refs:vRefs,ventes:vVentes,conception:vConception,login:vLogin,config:vConfig,erreur:vErreur,chargement:()=>`<p class="sub">Chargement…</p>`})[view]();
 }
 const head=(t,btn)=>`<div class="head"><div><h1>${t}</h1><div class="mob-sync" id="mobSync">${esc($("#sync span")?.textContent||"")}</div></div>${btn||""}</div>`;
 
@@ -440,7 +462,7 @@ const STATUTS=["Idée","En cours","En pause","Terminé"];
 function vProjets(){
   const l=S.projets.filter(p=>filtre==="tous"||p.domaine===filtre).sort((a,b)=>["En cours","Idée","En pause","Terminé"].indexOf(a.statut)-["En cours","Idée","En pause","Terminé"].indexOf(b.statut));
   return head("Projets",`<button class="btn" onclick="editProjet()">Nouveau projet</button>`)+filters(DOMAINES)+`<div class="list">${
-    l.length?l.map(p=>{const av=avancement(p);return`<div class="row click" onclick="editProjet('${p.id}')"><div class="grow"><h3>${esc(p.nom)}</h3><div class="sub">${esc(p.domaine)} · ${(p.taches||[]).length} tâche${(p.taches||[]).length>1?"s":""}${nbMed(p)}${(()=>{const d=depensesProjet(p).tot;return p.budget?" · "+eur(d)+" / "+eur(p.budget):d?" · "+eur(d)+" dépensés":""})()}${nbLiens(p)}</div><div class="bar"><i style="width:${av}%"></i></div></div><span class="pill ${p.statut==="En cours"?"acc":p.statut==="Terminé"?"ok":""}">${esc(p.statut)}</span></div>`}).join("")
+    l.length?l.map(p=>{const av=avancement(p);return`<div class="row click" onclick="editProjet('${p.id}')"><div class="grow"><h3>${esc(p.nom)}</h3><div class="sub">${esc(p.domaine)} · ${(p.taches||[]).length} tâche${(p.taches||[]).length>1?"s":""}${nbMed(p)}${(()=>{const d=depensesProjet(p).tot;return p.budget?" · "+eur(d)+" / "+eur(p.budget):d?" · "+eur(d)+" dépensés":""})()}${nbLiens(p)}</div><div class="bar"><i style="width:${av}%"></i></div></div><span style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem"><span class="pill ${p.statut==="En cours"?"acc":p.statut==="Terminé"?"ok":""}">${esc(p.statut)}</span><button class="btn ghost sm" onclick="event.stopPropagation();ouvrirConception('${p.id}')">Conception</button></span></div>`}).join("")
     :`<div class="empty">Aucun projet ici. Crée-en un pour suivre tes tâches et ton budget.</div>`}</div>`;
 }
 
@@ -916,7 +938,8 @@ const annulerFab=id=>{const f=S.fabrications.find(x=>x.id===id);annulerProd(f?.p
 function filters(opts){return`<div class="filters">${["tous",...opts].map(o=>`<button aria-pressed="${filtre===o}" onclick="filtre='${o}';render()">${o==="tous"?"Tous":o}</button>`).join("")}</div>`}
 
 /* ---------- Actions ---------- */
-document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{view=b.dataset.view;filtre="tous";ventesFiltre="toutes";refSel=null;stockQ="";stockOnglet="articles";stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
+$("#main").addEventListener("focusout",()=>{if(!renderAttente)return;setTimeout(()=>{const a=document.activeElement;if(renderAttente&&!(a&&$("#main").contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))){renderAttente=false;render()}},0)});
+document.querySelectorAll("nav .tab").forEach(b=>b.onclick=()=>{ctFlush();view=b.dataset.view;filtre="tous";ventesFiltre="toutes";refSel=null;stockQ="";stockOnglet="articles";stockVerrou=true;clearTimeout(verrouTimer);render();scrollTo(0,0)});
 /* Fenêtres : clic à côté = fermer, avec confirmation si une saisie est en cours */
 function fermable(d){let bas=null;
   d.addEventListener("pointerdown",e=>{bas=e.target});
@@ -1051,6 +1074,7 @@ function editProjet(id){
   const p=S.projets.find(x=>x.id===id)||{statut:"Idée",domaine:"Leurres",taches:[]};
   tmpTaches=JSON.parse(JSON.stringify(p.taches||[]));tmpLiens=JSON.parse(JSON.stringify(p.liens||[]));tmpDep=JSON.parse(JSON.stringify(p.depenses||[]));
   body.innerHTML=`<h2>${id?"Modifier le projet":"Nouveau projet"}</h2>
+  ${id?`<button type="button" class="btn ghost" style="align-self:flex-start" onclick="ouvrirConception('${id}')">Atelier de conception${ctHasData(p.conception)?" · étape "+(p.conception.etape||1):""}</button>`:`<p class="sub" style="margin:0">Après l'enregistrement, ouvre le projet pour accéder à l'atelier de conception (idées, pieuvre, cahier des charges, concepts).</p>`}
   <label>Nom<input id="f_nom" value="${esc(p.nom)}" placeholder="Stickbait 140 mm thon"></label>
   <div class="grid2"><label>Domaine<select id="f_dom">${opt(DOMAINES,p.domaine)}</select></label>
   <label>Statut<select id="f_stat">${opt(STATUTS,p.statut)}</select></label>
@@ -1081,8 +1105,176 @@ function blocDepenses(p){const d=depensesProjet(p),b=Number(p.budget)||0,pct=b?M
 function drawDeps(focus){const z=$("#deps");if(!z)return;
   z.innerHTML=tmpDep.map((x,i)=>`<div class="lien"><input type="date" value="${esc(x.date)}" oninput="tmpDep[${i}].date=this.value" aria-label="Date" style="max-width:9.5rem"><input value="${esc(x.nom)}" placeholder="Dépense (ex. peinture, outil)" oninput="tmpDep[${i}].nom=this.value" aria-label="Libellé"><input value="${esc(vIn(x.montant))}" type="text" inputmode="decimal" placeholder="€" style="max-width:6rem" oninput="tmpDep[${i}].montant=this.value" aria-label="Montant en euros"><button type="button" class="x" aria-label="Retirer" onclick="tmpDep.splice(${i},1);drawDeps()">×</button></div>`).join("");
   if(focus){const l=z.querySelectorAll('input[placeholder^="Dépense"]');l[l.length-1]?.focus()}}
+/* ---------- Atelier de conception (dans chaque projet) ---------- */
+let CT=null,ctPid=null,ctEtape=1,ctTimer=null,ctSel=[],ctTri="recent",renderAttente=false;
+const CT_ELEMENTS=["Pêcheur","Poisson ciblé","Eau de mer","Canne et ligne","Bas de ligne","Soleil (UV)","Rochers et dents","Transport et rangement","Réglementation","Budget"];
+const FLEX={F0:{t:"F0 · impératif",p:4},F1:{t:"F1 · peu négociable",p:3},F2:{t:"F2 · négociable",p:2},F3:{t:"F3 · très négociable",p:1}};
+const ctVide=()=>({idees:[],besoin:{qui:"",quoi:"",but:""},produit:"",elements:[],fonctions:[],concepts:[],retenu:"",leurres:[],etape:1});
+const ctHasData=c=>c&&((c.idees||[]).length||(c.fonctions||[]).length||(c.concepts||[]).length||(c.elements||[]).length);
+function ouvrirConception(pid){const p=S.projets.find(x=>x.id===pid);if(!p)return;
+  if(dlg.open&&dlg._sale&&!confirm("Quitter la fiche projet sans enregistrer tes modifications ?"))return;
+  ctPid=pid;CT={...ctVide(),...JSON.parse(JSON.stringify(p.conception||{}))};CT.produit=CT.produit||p.nom;ctEtape=CT.etape||1;ctSel=[];
+  dlg._sale=false;dlg.close();view="conception";render(true);scrollTo(0,0)}
+function ctSave(re){const z=$("#ctEtat");if(z)z.textContent="Enregistrement…";clearTimeout(ctTimer);
+  ctTimer=setTimeout(ctFlush,600);if(re)ctRender()}
+function ctFlush(){if(!ctTimer||!ctPid||!CT)return;clearTimeout(ctTimer);ctTimer=null;
+  upd("projets",ctPid,{conception:CT}).then(()=>{const z=$("#ctEtat");if(z)z.textContent="Enregistré"})}
+function ctRender(focusSel){render(true);if(focusSel){const e=$(focusSel);e&&e.focus()}}
+const ctCode=f=>{const L=CT.fonctions.filter(x=>x.type===f.type);return f.type+(L.indexOf(f)+1)};
+const ctNomEl=id=>CT.elements.find(e=>e.id===id)?.nom||"?";
+const ctPhrase=()=>{const b=CT.besoin;return b.qui||b.quoi||b.but?`<b>Besoin</b> · ${esc(CT.produit||"Le produit")} rend service à : <b>${esc(b.qui||"…")}</b> · agit sur : <b>${esc(b.quoi||"…")}</b> · dans le but de : <b>${esc(b.but||"…")}</b>`:""};
+function vConception(){const p=S.projets.find(x=>x.id===ctPid);if(!p||!CT){view="projets";return vProjets()}
+  const nCrit=CT.fonctions.filter(f=>(f.critere||"").trim()).length,lid=ctLeurreCourant();
+  const E=[[1,"Idées",CT.idees.length],[2,"Besoin et pieuvre",CT.fonctions.length],[3,"Cahier des charges",nCrit?nCrit+"/"+CT.fonctions.length:0],[4,"Concepts",CT.concepts.length],[5,"Prototype",lid?(S.leurres.find(l=>l.id===lid)?.version||"V1"):0]];
+  const corps={1:ctIdees,2:ctPieuvre,3:ctCdcf,4:ctConcepts,5:ctProto}[ctEtape]();
+  return`<button class="back" onclick="ctFlush();view='projets';render()">‹ Projets</button>`+head(esc(p.nom),`<span class="sub" id="ctEtat">Enregistré</span>`)+
+  (ctPhrase()?`<p class="ct-besoin">${ctPhrase()}</p>`:"")+
+  `<div class="seg ct-steps" role="group" aria-label="Étapes de conception">${E.map(([k,t,n])=>`<button aria-pressed="${ctEtape===k}" onclick="ctEtape=${k};CT.etape=${k};ctSave();ctRender()"><span class="ct-n">${k}</span> ${t}${n?` <span class="ct-c">${n}</span>`:""}</button>`).join("")}</div>`+corps}
+
+/* Étape 1 : idées */
+const ctCouleur=g=>{if(!g)return 0;let h=0;for(const c of g)h=(h*31+c.charCodeAt(0))>>>0;return 1+h%5};
+function ctIdees(){const I=[...CT.idees];if(ctTri==="votes")I.sort((a,b)=>(b.votes||0)-(a.votes||0));else if(ctTri==="themes")I.sort((a,b)=>(a.groupe||"~").localeCompare(b.groupe||"~")||(b.votes||0)-(a.votes||0));else I.reverse();
+  const G=[...new Set(CT.idees.map(i=>i.groupe).filter(Boolean))].sort();
+  return`<p class="sub">Note toutes les idées sans les juger, une par post-it. Ensuite range-les par thème et vote pour les meilleures. Les idées retenues deviennent des concepts ou des tâches.</p>
+  <div class="ct-add"><input id="ct_new" placeholder="Une idée… puis Entrée" onkeydown="if(event.key==='Enter'){event.preventDefault();ctAjIdee()}" aria-label="Nouvelle idée"><button class="btn" onclick="ctAjIdee()">Ajouter</button></div>
+  ${CT.idees.length?`<div class="filters" style="margin-top:.75rem">${[["recent","Récentes"],["votes","Plus votées"],["themes","Par thème"]].map(([k,t])=>`<button aria-pressed="${ctTri===k}" onclick="ctTri='${k}';ctRender()">${t}</button>`).join("")}</div>`:""}
+  <datalist id="ct_dlg">${G.map(g=>`<option value="${esc(g)}">`).join("")}</datalist>
+  <div class="postits">${I.length?I.map(i=>`<div class="postit pi${ctCouleur(i.groupe)}">
+    <textarea rows="3" oninput="ctIdee('${i.id}').txt=this.value;ctSave()" aria-label="Idée">${esc(i.txt)}</textarea>
+    <input list="ct_dlg" value="${esc(i.groupe||"")}" placeholder="Thème" onchange="ctIdee('${i.id}').groupe=this.value.trim();ctSave(true)" aria-label="Thème">
+    <div class="pi-b"><button class="pi-v" onclick="ctIdee('${i.id}').votes=(ctIdee('${i.id}').votes||0)+1;ctSave(true)" aria-label="Voter pour cette idée">▲ ${i.votes||0}</button>${i.votes?`<button class="pi-a" onclick="ctIdee('${i.id}').votes--;ctSave(true)" aria-label="Retirer un vote">▼</button>`:""}<span class="spacer"></span>
+    <button class="pi-a" onclick="ctIdeeVers('${i.id}','concept')" title="En faire un concept">→ concept</button><button class="pi-a" onclick="ctIdeeVers('${i.id}','tache')" title="En faire une tâche du projet">→ tâche</button><button class="pi-a" onclick="CT.idees=CT.idees.filter(x=>x.id!=='${i.id}');ctSave(true)" aria-label="Supprimer l'idée">×</button></div></div>`).join(""):`<div class="empty" style="grid-column:1/-1">Aucune idée pour l'instant.</div>`}</div>`}
+const ctIdee=id=>CT.idees.find(i=>i.id===id)||{};
+function ctAjIdee(){const v=$("#ct_new").value.trim();if(!v)return;CT.idees.push({id:uid(),txt:v,groupe:"",votes:0});ctSave();ctRender("#ct_new")}
+async function ctIdeeVers(id,quoi){const i=ctIdee(id);if(!i.txt)return;
+  if(quoi==="concept"){CT.concepts.push({id:uid(),nom:i.txt.slice(0,60),desc:i.txt,lien:"",matiere:"",notes:{}});i.versConcept=true;ctSave();toast("Concept créé à l'étape 4");ctRender();return}
+  const p=S.projets.find(x=>x.id===ctPid);await upd("projets",ctPid,{taches:[...(p.taches||[]),{id:uid(),txt:i.txt,fait:false}]});toast("Ajouté aux tâches du projet")}
+
+/* Étape 2 : besoin et pieuvre */
+function ctPieuvre(){const b=CT.besoin,sug=CT_ELEMENTS.filter(n=>!CT.elements.some(e=>sansAcc(e.nom)===sansAcc(n)));
+  return`<section class="block"><h2>Besoin (bête à cornes)</h2><p class="sub" style="margin-top:0">Trois questions pour fixer à quoi sert le produit avant de dessiner quoi que ce soit.</p>
+  <div class="grid2"><label>Produit<input value="${esc(CT.produit)}" oninput="CT.produit=this.value;ctSave()"></label>
+  <label>À qui rend-il service ?<input value="${esc(b.qui)}" placeholder="le pêcheur en traîne côtière" oninput="CT.besoin.qui=this.value;ctSave()"></label>
+  <label>Sur quoi agit-il ?<input value="${esc(b.quoi)}" placeholder="les thons et les bonites" oninput="CT.besoin.quoi=this.value;ctSave()"></label>
+  <label>Dans quel but ?<input value="${esc(b.but)}" placeholder="déclencher l'attaque à 6 nœuds et ferrer" oninput="CT.besoin.but=this.value;ctSave()"></label></div></section>
+  <section class="block"><h2>Pieuvre</h2><p class="sub" style="margin-top:0">1. Ajoute ce qui entoure le produit pendant sa vie. 2. Touche <b>un</b> élément pour une contrainte (FC), <b>deux</b> éléments pour une fonction principale (FP), celle que le produit assure entre les deux.</p>
+  <div class="ct-add"><input id="ct_el" placeholder="Élément du milieu extérieur" onkeydown="if(event.key==='Enter'){event.preventDefault();ctAjEl(this.value)}" aria-label="Nouvel élément"><button class="btn ghost" onclick="ctAjEl($('#ct_el').value)">Ajouter</button></div>
+  ${sug.length?`<div class="chips" style="margin:.5rem 0">${sug.map(n=>`<button type="button" onclick="ctAjEl('${esc(n)}')">+ ${esc(n)}</button>`).join("")}</div>`:""}
+  <div class="ct-pv"><div id="ct_svg">${svgPieuvre()}</div><div id="ct_selp">${panneauSel()}</div></div>
+  ${CT.elements.length?`<div class="chips" style="margin:.5rem 0 0">${CT.elements.map(e=>`<span class="pill">${esc(e.nom)} <button class="x" style="font-size:1rem;padding:0 .15rem" onclick="ctSupEl('${e.id}')" aria-label="Retirer ${esc(e.nom)}">×</button></span>`).join("")}</div>`:""}</section>
+  <section class="block"><h2>Fonctions (${CT.fonctions.length})</h2><div class="list">${CT.fonctions.length?CT.fonctions.map(f=>`<div class="row"><span class="pill ${f.type==="FP"?"ct-fp":"ct-fc"}">${ctCode(f)}</span><div class="grow"><input value="${esc(f.txt)}" oninput="ctFn('${f.id}').txt=this.value;ctSave()" aria-label="Fonction ${ctCode(f)}"><div class="sub">${f.type==="FP"?esc(ctNomEl(f.a))+" ↔ "+esc(ctNomEl(f.b)):esc(ctNomEl(f.a))}</div></div><button class="x" onclick="CT.fonctions=CT.fonctions.filter(x=>x.id!=='${f.id}');ctSave(true)" aria-label="Supprimer">×</button></div>`).join(""):`<div class="empty">Aucune fonction. Touche des éléments dans la pieuvre.</div>`}</div></section>`}
+const ctFn=id=>CT.fonctions.find(f=>f.id===id)||{};
+function ctAjEl(n){n=String(n||"").trim();if(!n)return;if(CT.elements.some(e=>sansAcc(e.nom)===sansAcc(n))){toast("Déjà présent");return}CT.elements.push({id:uid(),nom:n});ctSave();ctRender("#ct_el")}
+function ctSupEl(id){const n=CT.fonctions.filter(f=>f.a===id||f.b===id).length;if(n&&!confirm(`Retirer cet élément supprime aussi ${n} fonction${n>1?"s":""}. Continuer ?`))return;
+  CT.elements=CT.elements.filter(e=>e.id!==id);CT.fonctions=CT.fonctions.filter(f=>f.a!==id&&f.b!==id);ctSel=ctSel.filter(x=>x!==id);ctSave(true)}
+function svgPieuvre(){const els=CT.elements,n=els.length,R=150,pos={};
+  els.forEach((e,i)=>{const a=-Math.PI/2+i*2*Math.PI/Math.max(n,1);pos[e.id]={x:Math.round(R*Math.cos(a)),y:Math.round(R*Math.sin(a))}});
+  const nomC=(CT.produit||"Produit").slice(0,22);
+  const lignes=CT.fonctions.map(f=>{const A=pos[f.a];if(!A)return"";const code=ctCode(f);
+    if(f.type==="FP"){const B=pos[f.b];if(!B)return"";const cx=-(A.x+B.x)/2,cy=-(A.y+B.y)/2,t=.28,lx=(1-t)*(1-t)*A.x+2*(1-t)*t*cx+t*t*B.x,ly=(1-t)*(1-t)*A.y+2*(1-t)*t*cy+t*t*B.y;
+      return`<path d="M${A.x} ${A.y} Q${cx} ${cy} ${B.x} ${B.y}" class="pv-fp"/><text x="${lx}" y="${ly}" class="pv-lb pv-lfp">${code}</text>`}
+    const lx=A.x*.55,ly=A.y*.55;return`<line x1="${A.x}" y1="${A.y}" x2="0" y2="0" class="pv-fc"/><text x="${lx}" y="${ly}" class="pv-lb pv-lfc">${code}</text>`}).join("");
+  const boites=els.map(e=>{const P=pos[e.id],t=e.nom.length>16?e.nom.slice(0,15)+"…":e.nom,w=Math.max(54,t.length*6.6+18),sel=ctSel.includes(e.id);
+    return`<g class="pv-el ${sel?"sel":""}" role="button" tabindex="0" aria-pressed="${sel}" aria-label="${esc(e.nom)}" onclick="ctTouche('${e.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();ctTouche('${e.id}')}"><rect x="${P.x-w/2}" y="${P.y-14}" width="${w}" height="28" rx="8"/><text x="${P.x}" y="${P.y+4}">${esc(t)}</text></g>`}).join("");
+  return`<svg viewBox="-215 -190 430 380" class="pv" role="img" aria-label="Diagramme pieuvre : ${CT.fonctions.length} fonctions">${lignes}<ellipse cx="0" cy="0" rx="74" ry="32" class="pv-c"/><text x="0" y="5" class="pv-ct">${esc(nomC)}</text>${boites}${n?"":`<text x="0" y="80" class="pv-lb" style="font-size:12px">Ajoute des éléments autour du produit</text>`}</svg>
+  <p class="sub" style="margin:.2rem 0 0;text-align:center"><span class="ct-leg ct-legfp"></span> FP : fonction principale, relie deux éléments à travers le produit · <span class="ct-leg ct-legfc"></span> FC : contrainte imposée par un élément</p>`}
+function ctTouche(id){ctSel=ctSel.includes(id)?ctSel.filter(x=>x!==id):[...ctSel,id].slice(-2);$("#ct_svg").innerHTML=svgPieuvre();$("#ct_selp").innerHTML=panneauSel();const i=$("#ct_fn");i&&i.focus()}
+function panneauSel(){if(!ctSel.length)return"";const a=ctNomEl(ctSel[0]),b=ctSel[1]&&ctNomEl(ctSel[1]),fp=!!b;
+  const ph=fp?`Permettre au ${sansAcc(a)==="pecheur"?"pêcheur":a.toLowerCase()} de … ${b.toLowerCase()}`:`Résister à / s'adapter à : ${a.toLowerCase()}`;
+  return`<div class="bloc ct-selp"><b>${fp?`Fonction principale : ${esc(a)} ↔ ${esc(b)}`:`Contrainte : ${esc(a)}`}</b>
+  <input id="ct_fn" placeholder="${esc(ph)}" onkeydown="if(event.key==='Enter'){event.preventDefault();ctAjFn()}" aria-label="Texte de la fonction">
+  <div class="actions" style="justify-content:flex-start"><button class="btn sm" onclick="ctAjFn()">Ajouter ${fp?"la FP":"la FC"}</button><button class="btn ghost sm" onclick="ctSel=[];$('#ct_svg').innerHTML=svgPieuvre();$('#ct_selp').innerHTML=''">Annuler</button>${fp?"":`<span class="sub">ou touche un 2e élément pour une FP</span>`}</div></div>`}
+function ctAjFn(){if(!ctSel.length)return;const t=($("#ct_fn")?.value||"").trim();
+  const f={id:uid(),type:ctSel.length===2?"FP":"FC",a:ctSel[0],b:ctSel[1]||"",txt:t,critere:"",niveau:"",flex:ctSel.length===2?"F1":"F2"};const s=ctSugg(f);if(s){f.critere=s.c;f.niveau=s.n;f.flex=s.f}
+  if(!f.txt)f.txt=f.type==="FP"?`Relier ${ctNomEl(f.a).toLowerCase()} et ${ctNomEl(f.b).toLowerCase()}`:(s?s.c:"Supporter : "+ctNomEl(f.a).toLowerCase());
+  CT.fonctions.push(f);ctSel=[];ctSave(true)}
+
+/* Étape 3 : cahier des charges */
+const CT_SUGG=[[/(poisson|thon|bar|predat|bonite|carangue)/,"Attractivité et nage","Nage stable et régulière de 4 à 8 nœuds, sans décrocher","F1"],
+  [/(eau|mer|sel)/,"Tenue à l'eau salée","Aucune infiltration ni corrosion après 10 sorties","F0"],
+  [/(uv|soleil)/,"Tenue aux UV","Pas de décoloration visible après une saison","F2"],
+  [/(bas de ligne|ligne|canne|tresse)/,"Résistance de l'armement","Œillets et anneaux ≥ résistance du bas de ligne (ex. 50 kg)","F0"],
+  [/(roche|dent|choc)/,"Résistance aux chocs et morsures","Pas de fissure après une chute de 1 m sur roche","F1"],
+  [/(transport|rangement|boite)/,"Encombrement","Tient dans une boîte à leurres standard (≤ 25 cm)","F3"],
+  [/(budget|cout|prix)/,"Coût de revient","≤ 8 € par leurre","F1"],
+  [/(regle|legal|norme)/,"Conformité","Armement et tailles conformes à la réglementation locale","F0"],
+  [/(pecheur|utilisateur)/,"Facilité d'utilisation","Lancer à 40 m ou mise à l'eau en traîne sans emmêlage","F2"]];
+function ctSugg(f){const txt=sansAcc([ctNomEl(f.a),f.b?ctNomEl(f.b):""].join(" "));const order=f.type==="FP"?CT_SUGG:CT_SUGG.slice(1).concat(CT_SUGG.slice(0,1));
+  for(const[r,c,n,fl]of order)if(r.test(txt))return{c,n,f:fl};return null}
+function ctCdcf(){if(!CT.fonctions.length)return`<div class="list"><div class="empty">Crée d'abord des fonctions dans la pieuvre (étape 2) : elles arrivent ici automatiquement.</div></div>`;
+  return`<p class="sub">Pour chaque fonction : un critère mesurable, son niveau et sa flexibilité. Les flexibilités pèsent dans la matrice de décision (F0 compte 4 fois plus que F3).</p>
+  <div class="actions" style="justify-content:flex-start;margin-bottom:.75rem"><button class="btn ghost sm" onclick="ctSuggTout()">Suggérer les cases vides</button><button class="btn ghost sm" onclick="ctCopier()">Copier le cahier des charges</button></div>
+  <div class="ct-cdcf">${CT.fonctions.map(f=>`<div class="bloc"><div style="display:flex;gap:.5rem;align-items:baseline;flex-wrap:wrap"><span class="pill ${f.type==="FP"?"ct-fp":"ct-fc"}">${ctCode(f)}</span><b style="flex:1;min-width:10rem">${esc(f.txt||"(sans titre)")}</b><span class="sub">${f.type==="FP"?esc(ctNomEl(f.a))+" ↔ "+esc(ctNomEl(f.b)):esc(ctNomEl(f.a))}</span></div>
+    <div class="grid2" style="margin-top:.5rem"><label>Critère<input value="${esc(f.critere)}" placeholder="Ce qu'on mesure" oninput="ctFn('${f.id}').critere=this.value;ctSave()"></label><label>Niveau<input value="${esc(f.niveau)}" placeholder="Valeur cible et tolérance" oninput="ctFn('${f.id}').niveau=this.value;ctSave()"></label>
+    <label>Flexibilité<select onchange="ctFn('${f.id}').flex=this.value;ctSave()">${Object.entries(FLEX).map(([k,v])=>`<option value="${k}" ${f.flex===k?"selected":""}>${v.t}</option>`).join("")}</select></label></div></div>`).join("")}</div>`}
+function ctSuggTout(){let n=0;CT.fonctions.forEach(f=>{const s=ctSugg(f);if(s){if(!f.critere){f.critere=s.c;n++}if(!f.niveau)f.niveau=s.n}});ctSave(true);toast(n?n+" critère"+(n>1?"s":"")+" suggéré"+(n>1?"s":"")+" : ajuste les niveaux":"Rien à suggérer")}
+function ctCopier(){const txt=`Cahier des charges : ${CT.produit}\n`+(ctPhrase()?ctPhrase().replace(/<[^>]+>/g,"").replace(/^Besoin · /,"Besoin : ")+"\n":"")+"\n"+CT.fonctions.map(f=>`${ctCode(f)} : ${f.txt}\n  Critère : ${f.critere||"-"} | Niveau : ${f.niveau||"-"} | ${f.flex||""}`).join("\n");
+  (navigator.clipboard?.writeText(txt)||Promise.reject()).then(()=>toast("Copié : colle-le où tu veux")).catch(()=>{body.innerHTML=`<h2>Cahier des charges</h2><textarea style="min-height:18rem">${esc(txt)}</textarea><div class="actions"><button class="btn" onclick="dlg.close()">Fermer</button></div>`;dlg.showModal()})}
+
+/* Étape 4 : concepts et matrice de décision */
+function ctScores(){const F=CT.fonctions,max=F.reduce((s,f)=>s+5*(FLEX[f.flex]?.p||2),0)||1;
+  return CT.concepts.map(c=>{const pts=F.reduce((s,f)=>s+(Number(c.notes?.[f.id])||0)*(FLEX[f.flex]?.p||2),0),elim=F.filter(f=>f.flex==="F0"&&c.notes?.[f.id]!=null&&c.notes[f.id]!==""&&Number(c.notes[f.id])<=1);
+    return{c,pct:Math.round(pts/max*100),elim,nb:F.filter(f=>c.notes?.[f.id]!=null&&c.notes[f.id]!=="").length}})}
+function ctConcepts(){const sc=ctScores(),ok=sc.filter(s=>!s.elim.length&&s.nb),best=ok.length?ok.reduce((a,b)=>b.pct>a.pct?b:a):null;
+  return`<p class="sub">Décris 2 à 4 solutions différentes, puis note-les de 0 à 5 sur chaque fonction. Le score tient compte de la flexibilité. Une note de 0 ou 1 sur une fonction F0 élimine le concept.</p>
+  <div class="ct-add"><input id="ct_cn" placeholder="Nom du concept (ex. corps ASA + lest tungstène)" onkeydown="if(event.key==='Enter'){event.preventDefault();ctAjConcept()}" aria-label="Nouveau concept"><button class="btn" onclick="ctAjConcept()">Ajouter</button></div>
+  <div class="ct-cc">${CT.concepts.map(c=>`<div class="bloc ${CT.retenu===c.id?"ct-ret":""}"><div style="display:flex;gap:.4rem;align-items:center"><input value="${esc(c.nom)}" style="font-weight:600" oninput="ctCo('${c.id}').nom=this.value;ctSave()" aria-label="Nom du concept">${CT.retenu===c.id?`<span class="pill ok">Retenu</span>`:""}<button class="x" onclick="if(confirm('Supprimer ce concept ?')){CT.concepts=CT.concepts.filter(x=>x.id!=='${c.id}');if(CT.retenu==='${c.id}')CT.retenu='';ctSave(true)}" aria-label="Supprimer">×</button></div>
+    <textarea rows="2" placeholder="Principe, forme, armement, procédé…" oninput="ctCo('${c.id}').desc=this.value;ctSave()" aria-label="Description">${esc(c.desc)}</textarea>
+    <div class="grid2"><label>Matière<select onchange="ctCo('${c.id}').matiere=this.value;ctSave()"><option value="">—</option>${MATIERES_CORPS.map(m=>`<option ${m===c.matiere?"selected":""}>${m}</option>`).join("")}</select></label><label>Croquis, STL, photo (lien)<input value="${esc(c.lien)}" inputmode="url" placeholder="https://…" oninput="ctCo('${c.id}').lien=this.value;ctSave()"></label></div></div>`).join("")}</div>
+  ${CT.concepts.length&&CT.fonctions.length?`<h2 style="margin:1.25rem 0 .5rem">Matrice de décision</h2><div class="tw"><table class="ref ct-mx"><thead><tr><th>Fonction</th><th>Poids</th>${sc.map(s=>`<th>${esc(s.c.nom.slice(0,22))}</th>`).join("")}</tr></thead><tbody>
+    ${CT.fonctions.map(f=>`<tr><td><span class="pill ${f.type==="FP"?"ct-fp":"ct-fc"}">${ctCode(f)}</span> ${esc((f.critere||f.txt).slice(0,40))}</td><td class="n">${FLEX[f.flex]?.p||2}</td>${CT.concepts.map(c=>`<td><select class="ct-note" onchange="ctCo('${c.id}').notes['${f.id}']=this.value;ctSave(true)" aria-label="Note ${esc(c.nom)} sur ${ctCode(f)}">${["","0","1","2","3","4","5"].map(v=>`<option value="${v}" ${String(c.notes?.[f.id]??"")===v?"selected":""}>${v===""?"–":v}</option>`).join("")}</select></td>`).join("")}</tr>`).join("")}
+    <tr class="ct-tot"><td><b>Score</b></td><td></td>${sc.map(s=>`<td class="n">${s.elim.length?`<span class="st-crit">${ICO_NIV.crit} éliminé</span>`:`<b>${s.pct} %</b>${best&&best.c.id===s.c.id?` <span class="pill ok">meilleur</span>`:""}`}<div class="sub">${s.nb}/${CT.fonctions.length} notés</div></td>`).join("")}</tr>
+    <tr><td></td><td></td>${sc.map(s=>`<td>${CT.retenu===s.c.id?`<span class="sub">Retenu</span>`:`<button class="btn ghost sm" onclick="CT.retenu='${s.c.id}';ctSave();ctEtape=5;CT.etape=5;ctRender();toast('Concept retenu')">Retenir</button>`}</td>`).join("")}</tr></tbody></table></div>
+    <p class="sub">0 = ne répond pas, 3 = correct, 5 = excellent. Poids : F0 = 4, F1 = 3, F2 = 2, F3 = 1.</p>`:CT.concepts.length?`<p class="sub">Ajoute des fonctions (étape 2) pour comparer les concepts.</p>`:""}`}
+const ctCo=id=>{const c=CT.concepts.find(x=>x.id===id)||{};c.notes??={};return c};
+function ctAjConcept(){const v=$("#ct_cn").value.trim();if(!v)return;CT.concepts.push({id:uid(),nom:v,desc:"",lien:"",matiere:"",notes:{}});ctSave();ctRender("#ct_cn")}
+
+/* Étape 5 : prototype et validation par les essais */
+const ctLeurreCourant=()=>[...(CT?.leurres||[])].reverse().find(id=>S.leurres.some(l=>l.id===id))||"";
+function critDuLeurre(lid){const p=S.projets.find(x=>(x.conception?.leurres||[]).includes(lid));return p?{p,F:(p.conception.fonctions||[]).filter(f=>(f.critere||"").trim())}:null}
+function statutCrit(lid,fid){const E=S.essais.filter(e=>e.leurreId===lid&&e.criteres&&e.criteres[fid]).sort((a,b)=>(b.date||"").localeCompare(a.date||""));return E[0]?{s:E[0].criteres[fid],date:E[0].date,lieu:E[0].lieu}:null}
+function ctProto(){const c=CT.concepts.find(x=>x.id===CT.retenu);
+  if(!c)return`<div class="list"><div class="empty">Retiens d'abord un concept à l'étape 4.</div></div>`;
+  const lid=ctLeurreCourant(),l=S.leurres.find(x=>x.id===lid),F=CT.fonctions.filter(f=>(f.critere||"").trim());
+  let h=`<section class="block"><h2>Concept retenu</h2><div class="list"><div class="row"><div class="grow"><h3>${esc(c.nom)}</h3><div class="sub">${[c.matiere,c.desc].filter(Boolean).map(esc).join(" · ")}</div>${/^https?:\/\//.test(c.lien||"")?`<a href="${esc(c.lien)}" target="_blank" rel="noopener" class="sub">Ouvrir le croquis</a>`:""}</div></div></div></section>`;
+  if(!l)return h+`<section class="block"><h2>Prototype</h2><p class="sub">Crée la fiche leurre V1 depuis ce concept : nom, matière, notes et lien sont repris, et les tâches de prototypage sont ajoutées au projet.</p><button class="btn" onclick="ctCreerV1()">Créer la fiche leurre V1</button></section>`;
+  const st=F.map(f=>({f,r:statutCrit(lid,f.id)})),ok=st.filter(x=>x.r?.s==="ok").length,ko=st.filter(x=>x.r?.s==="ko"),f0ok=st.filter(x=>x.f.flex==="F0").every(x=>x.r?.s==="ok");
+  h+=`<section class="block"><h2>Prototype en cours : ${esc(l.nom)} <span class="pill">${esc(l.version||"V1")}</span></h2>
+  <div class="actions" style="justify-content:flex-start;margin-bottom:.6rem"><button class="btn" onclick="editEssai('${lid}')">Noter un essai</button><button class="btn ghost" onclick="editLeurre('${lid}')">Fiche leurre</button><button class="btn ghost" onclick="editProduction('${lid}')">Lancer une production</button></div>
+  ${F.length?`<div class="kpis kpis3"><div class="kpi"><strong class="num">${ok}/${F.length}</strong><span>critères validés</span></div><div class="kpi ${ko.length?"warn":""}"><strong class="num">${ko.length}</strong><span>à corriger</span></div><div class="kpi"><strong>${f0ok?"Oui":"Non"}</strong><span>impératifs (F0) tous validés</span></div></div>
+  <div class="list">${st.map(x=>`<div class="row"><span class="pill ${x.f.type==="FP"?"ct-fp":"ct-fc"}">${ctCode(x.f)}</span><div class="grow">${esc(x.f.critere)}<div class="sub">${esc(x.f.niveau||"")}${x.f.niveau?" · ":""}${x.f.flex||""}${x.r?` · essai du ${new Date(x.r.date).toLocaleDateString("fr-FR")}${x.r.lieu?", "+esc(x.r.lieu):""}`:""}</div></div>${x.r?.s==="ok"?`<span class="st-ok">${ICO_NIV.ok} OK</span>`:x.r?.s==="ko"?`<span class="st-crit">${ICO_NIV.crit} KO</span>`:`<span class="sub">à tester</span>`}</div>`).join("")}</div>
+  <p class="sub">Les statuts viennent des essais : dans « Noter un essai », chaque critère se coche OK ou KO. Le dernier essai fait foi.</p>`:`<p class="sub">Ajoute des critères au cahier des charges (étape 3) pour les valider pendant les essais.</p>`}
+  ${ko.length?`<div class="bandeau" style="margin-top:.75rem"><span>${ko.length} critère${ko.length>1?"s":""} KO : crée la version suivante avec la liste des corrections.</span><button class="btn sm" onclick="ctVersionSuivante()">Créer la ${esc(versionSuivante(l.version))}</button></div>`:""}</section>`;
+  const V=(CT.leurres||[]).map(id=>S.leurres.find(x=>x.id===id)).filter(Boolean);
+  if(V.length>1)h+=`<section class="block"><h2>Versions</h2><div class="list">${V.map(v=>{const s=F.map(f=>statutCrit(v.id,f.id)?.s);return`<div class="row click" onclick="editLeurre('${v.id}')"><div class="grow">${esc(v.nom)} <span class="pill">${esc(v.version||"")}</span><div class="sub">${s.filter(x=>x==="ok").length} OK, ${s.filter(x=>x==="ko").length} KO, ${s.filter(x=>!x).length} à tester</div></div></div>`}).join("")}</div></section>`;
+  return h}
+const versionSuivante=v=>{const m=String(v||"V1").match(/^(.*?)(\d+)$/);return m?m[1]+(+m[2]+1):(v||"V1")+"-2"};
+async function ctCreerV1(){const c=CT.concepts.find(x=>x.id===CT.retenu),p=S.projets.find(x=>x.id===ctPid);if(!c||!p)return;
+  const id=uid(),notes=[c.desc,ctPhrase()?"Besoin : "+ctPhrase().replace(/<[^>]+>/g,""):""].filter(Boolean).join("\n");
+  const T=["Modéliser la V1","Imprimer le prototype","Finition : peinture, résine, armement","Essai de nage et validation du cahier des charges"];
+  const taches=[...(p.taches||[]),...T.filter(t=>!(p.taches||[]).some(x=>x.txt===t)).map(t=>({id:uid(),txt:t,fait:false}))];
+  CT.leurres=[...(CT.leurres||[]),id];clearTimeout(ctTimer);ctTimer=null;
+  try{await store.batch([{op:"set",c:"leurres",id,data:{nom:c.nom,version:"V1",corps:MATIERES_CORPS.includes(c.matiere)?c.matiere:"",nage:"",notes,liens:/^https?:\/\//.test(c.lien||"")?[{nom:"Croquis / STL",url:c.lien}]:[],bom:[],medias:[],projetId:ctPid}},{op:"upd",c:"projets",id:ctPid,f:{taches,conception:CT}}]);toast("Fiche V1 créée et tâches ajoutées");ctRender()}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
+async function ctVersionSuivante(){const lid=ctLeurreCourant(),l=S.leurres.find(x=>x.id===lid),p=S.projets.find(x=>x.id===ctPid);if(!l)return;
+  const F=CT.fonctions.filter(f=>(f.critere||"").trim()),ko=F.filter(f=>statutCrit(lid,f.id)?.s==="ko"),v=versionSuivante(l.version),id=uid();
+  const {id:_,...base}=l;const notes=`À corriger depuis la ${l.version||"V1"} :\n`+ko.map(f=>`- ${ctCode(f)} ${f.critere} (${f.niveau||"niveau à préciser"})`).join("\n")+(l.notes?"\n\n"+l.notes:"");
+  const taches=[...(p.taches||[]),...ko.map(f=>({id:uid(),txt:`${v} : corriger ${f.critere}`,fait:false}))];
+  CT.leurres=[...(CT.leurres||[]),id];clearTimeout(ctTimer);ctTimer=null;
+  try{await store.batch([{op:"set",c:"leurres",id,data:{...base,version:v,notes,medias:[]}},{op:"upd",c:"projets",id:ctPid,f:{taches,conception:CT}}]);toast(`${v} créée avec ${ko.length} correction${ko.length>1?"s":""} à faire`);ctRender()}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
+
+const ICO_POIGNEE='<svg width="14" height="18" viewBox="0 0 14 18" aria-hidden="true"><g fill="currentColor"><circle cx="4" cy="3" r="1.6"/><circle cx="10" cy="3" r="1.6"/><circle cx="4" cy="9" r="1.6"/><circle cx="10" cy="9" r="1.6"/><circle cx="4" cy="15" r="1.6"/><circle cx="10" cy="15" r="1.6"/></g></svg>';
+const LISTES_TRIABLES={taches:{arr:()=>tmpTaches,set:v=>{tmpTaches=v},draw:()=>drawTaches()}};
+function glisser(e,cle){const h=e.currentTarget,row=h.closest("[data-i]"),list=row.parentElement;e.preventDefault();h.setPointerCapture(e.pointerId);row.classList.add("glisse");
+  const mv=ev=>{const prev=row.previousElementSibling,next=row.nextElementSibling;
+    if(prev){const r=prev.getBoundingClientRect();if(ev.clientY<r.top+r.height/2){list.insertBefore(prev,row.nextSibling);return}}
+    if(next){const r=next.getBoundingClientRect();if(ev.clientY>r.top+r.height/2)list.insertBefore(next,row)}};
+  const fin=()=>{h.removeEventListener("pointermove",mv);h.removeEventListener("pointerup",fin);h.removeEventListener("pointercancel",fin);row.classList.remove("glisse");
+    const L=LISTES_TRIABLES[cle],a=L.arr(),ordre=[...list.children].map(x=>+x.dataset.i);if(ordre.some((v,k)=>v!==k)){L.set(ordre.map(k=>a[k]));L.draw();const d=list.closest("dialog");if(d)d._sale=true}};
+  h.addEventListener("pointermove",mv);h.addEventListener("pointerup",fin);h.addEventListener("pointercancel",fin)}
+function glisserClavier(e,cle,i){const d=e.key==="ArrowUp"?-1:e.key==="ArrowDown"?1:0;if(!d)return;e.preventDefault();const L=LISTES_TRIABLES[cle],a=[...L.arr()],j=i+d;if(j<0||j>=a.length)return;
+  [a[i],a[j]]=[a[j],a[i]];L.set(a);L.draw();const z=document.querySelectorAll(`#${cle} .poignee`)[j];z&&z.focus();const dl=z?.closest("dialog");if(dl)dl._sale=true}
 function drawTaches(focus){
-  $("#taches").innerHTML=tmpTaches.map((t,i)=>`<div class="task"><input type="checkbox" ${t.fait?"checked":""} onchange="tmpTaches[${i}].fait=this.checked" aria-label="Fait"><input type="text" value="${esc(t.txt)}" oninput="tmpTaches[${i}].txt=this.value" placeholder="Décrire la tâche"><button class="x" aria-label="Retirer" onclick="tmpTaches.splice(${i},1);drawTaches()">×</button></div>`).join("");
+  $("#taches").innerHTML=tmpTaches.map((t,i)=>`<div class="task" data-i="${i}"><button type="button" class="poignee" aria-label="Déplacer la tâche (glisser, ou flèches haut et bas)" onpointerdown="glisser(event,'taches')" onkeydown="glisserClavier(event,'taches',${i})">${ICO_POIGNEE}</button><input type="checkbox" ${t.fait?"checked":""} onchange="tmpTaches[${i}].fait=this.checked" aria-label="Fait"><input type="text" value="${esc(t.txt)}" oninput="tmpTaches[${i}].txt=this.value" placeholder="Décrire la tâche"><button class="x" aria-label="Retirer" onclick="tmpTaches.splice(${i},1);drawTaches()">×</button></div>`).join("");
   if(focus){const ins=$("#taches").querySelectorAll("input[type=text]");ins[ins.length-1]?.focus()}
 }
 
@@ -1192,6 +1384,7 @@ function editEssai(lid,eid){
   <label>Note du leurre<select id="e_note">${["","1","2","3","4","5"].map(n=>`<option value="${n}" ${String(e.note||"")===n?"selected":""}>${n?"★".repeat(+n):"Pas de note"}</option>`).join("")}</select></label></div>
   <div><h3 style="margin-bottom:.4rem">Prises</h3><div id="prises" style="display:flex;flex-direction:column;gap:.4rem"></div>
   <button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="tmpPrises.push({espece:'',taille:'',poids:''});drawPrises(true)">Ajouter une prise</button></div>
+  ${(()=>{const c=critDuLeurre(lid);if(!c||!c.F.length)return"";return`<div><h3 style="margin-bottom:.2rem">Critères du cahier des charges</h3><p class="sub" style="margin:0 0 .4rem">Projet « ${esc(c.p.nom)} ». Laisse « à tester » ce que tu n'as pas pu vérifier.</p>${c.F.map((f,k)=>{const v=e.criteres?.[f.id]||"";return`<div class="mv" style="grid-template-columns:1fr auto"><span class="mv-n">${esc(f.critere)}<small>${esc(f.niveau||"")} · ${f.flex||""}</small></span><select class="e_cr" data-f="${f.id}" style="width:auto" aria-label="${esc(f.critere)}"><option value="" ${v===""?"selected":""}>à tester</option><option value="ok" ${v==="ok"?"selected":""}>OK</option><option value="ko" ${v==="ko"?"selected":""}>KO</option></select></div>`}).join("")}</div>`})()}
   <label>Observations<textarea id="e_obs" placeholder="Nage, profondeur, comportement, attaques ratées…">${esc(e.obs)}</textarea></label>
   <div class="actions">${eid?`<button class="btn danger" onclick="supprEssai('${eid}')">Supprimer</button>`:""}<span class="spacer"></span><button class="btn ghost" onclick="viewer.close()">Annuler</button><button class="btn" onclick="enregEssai('${lid}','${eid||""}')">Enregistrer</button></div>`;
   drawPrises();if(!viewer.open)viewer.showModal();
@@ -1199,9 +1392,9 @@ function editEssai(lid,eid){
 function drawPrises(focus){$("#prises").innerHTML=tmpPrises.map((p,i)=>`<div class="lien"><input list="dl_esp" value="${esc(p.espece)}" placeholder="Espèce" oninput="tmpPrises[${i}].espece=this.value" aria-label="Espèce"><input value="${esc(vIn(p.taille))}" type="text" inputmode="decimal" placeholder="Taille (cm)" style="max-width:6.5rem" oninput="tmpPrises[${i}].taille=this.value" aria-label="Taille en cm"><input value="${esc(vIn(p.poids))}" type="text" inputmode="decimal" placeholder="Poids (kg)" style="max-width:6.5rem" oninput="tmpPrises[${i}].poids=this.value" aria-label="Poids en kg"><button type="button" class="x" aria-label="Retirer" onclick="tmpPrises.splice(${i},1);drawPrises()">×</button></div>`).join("");
   if(focus){const l=$("#prises").querySelectorAll('input[list]');l[l.length-1]?.focus()}}
 async function enregEssai(lid,eid){
-  const d={leurreId:lid,type:val("e_type"),date:val("e_date"),lieu:val("e_lieu"),vitesse:num("e_vit")||null,conditions:val("e_cond"),note:+val("e_note")||0,obs:val("e_obs"),
+  const d={leurreId:lid,type:val("e_type"),date:val("e_date"),lieu:val("e_lieu"),vitesse:num("e_vit")||null,conditions:val("e_cond"),note:+val("e_note")||0,obs:val("e_obs"),criteres:Object.fromEntries([...document.querySelectorAll("#viewerBody .e_cr")].filter(x=>x.value).map(x=>[x.dataset.f,x.value])),
     prises:tmpPrises.filter(p=>(p.espece||"").trim()).map(p=>({espece:p.espece.trim(),taille:pnum(p.taille)||null,poids:pnum(p.poids)||null}))};
-  viewer.close();await save("essais",{id:eid||uid(),...d});toast("Enregistré");majBlocEssais(lid);
+  viewer.close();await save("essais",{id:eid||uid(),...d});toast("Enregistré");majBlocEssais(lid);if(view==="conception")ctRender();
 }
 async function supprEssai(eid){if(!confirm("Supprimer cette sortie ?"))return;const lid=S.essais.find(x=>x.id===eid)?.leurreId;viewer.close();await remove("essais",eid);toast("Supprimé");if(lid)majBlocEssais(lid)}
 function majBlocEssais(lid){const z=$("#essaisBloc");if(z&&dlg.open)z.outerHTML=blocEssais(lid)}
