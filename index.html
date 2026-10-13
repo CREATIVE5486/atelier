@@ -281,6 +281,13 @@ table.couts td.n svg{vertical-align:-1px}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .pv{--fp:#3987e5;--fc:#d95926}:root:not([data-theme="light"]) .pill.ct-fp{color:#8dbdf5}:root:not([data-theme="light"]) .pill.ct-fc{color:#f3a07a}}
 :root[data-theme="dark"] .pv{--fp:#3987e5;--fc:#d95926}:root[data-theme="dark"] .pill.ct-fp{color:#8dbdf5}:root[data-theme="dark"] .pill.ct-fc{color:#f3a07a}
 .dom-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.6rem}.dom{display:flex;flex-direction:column;gap:.25rem;text-align:left;border:1px solid var(--line);background:var(--bg);border-radius:10px;padding:.8rem .9rem;color:var(--ink)}.dom:hover,.dom:focus-visible{border-color:var(--accent)}.dom b{font-family:"Barlow Condensed",sans-serif;font-size:1.25rem}.dom span{font-size:.85rem;color:var(--muted)}
+.idee{display:flex;gap:.35rem;align-items:center;background:#fff3b0;border-radius:6px;padding:.3rem .4rem}.idee input{flex:1;min-width:0;background:transparent;border:0;color:#1f1a10}.idee .btn{background:rgba(255,255,255,.6);color:#1f1a10;border-color:rgba(0,0,0,.15);padding:.2rem .45rem;font-size:.8rem}.idee .x{color:#5a4a20}
+.ct-vi input{flex:1;min-width:0;background:transparent;border:0;color:#1f1a10;padding:.2rem}
+.prio{border:0;border-radius:99px;font-size:.72rem;font-weight:700;padding:.15rem .5rem;white-space:nowrap;flex:none}.prio.p1{background:color-mix(in srgb,var(--crit) 20%,transparent);color:var(--crit)}.prio.p2{background:color-mix(in srgb,var(--warn) 20%,transparent);color:var(--warn)}.prio.p3{background:var(--chip);color:var(--muted)}
+.flux{display:flex;align-items:stretch;gap:.35rem;flex-wrap:wrap}.fx{flex:1 1 6rem;display:flex;flex-direction:column;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:.45rem .55rem;min-width:5.5rem}.fx b{font-family:"Barlow Condensed",sans-serif;font-size:1.5rem;line-height:1}.fx span{font-size:.78rem;color:var(--muted)}.fx small{font-size:.72rem;color:var(--muted)}.fx-af{border-color:var(--accent)}.fx-ok{border-color:var(--good)}.fx-a{align-self:center;color:var(--muted);font-weight:700}
+@media (max-width:760px){.fx-a{display:none}.fx{flex-basis:calc(50% - .35rem)}}
+.t-act{display:flex;align-items:center;gap:.15rem}@media (max-width:760px){.task{flex-wrap:wrap;row-gap:.2rem}.task input[type=text]{flex:1 1 calc(100% - 4.5rem)}.task .t-act{margin-left:auto}.idee{flex-wrap:wrap}.idee input{flex:1 1 100%}}
+.jrn .mv{grid-template-columns:4.6rem 1fr auto auto auto}.jrn .x:disabled{opacity:.25}
 .mo{display:none}@media (max-width:760px){.mh{display:none}.mo{display:inline}}
 .pese{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.5rem;margin-top:.4rem}.pese label,.pese input{min-width:0}.pese input{box-sizing:border-box;width:100%;max-width:100%}
 @media (max-width:760px){.kpis.kpis3 .kpi{padding:.7rem}.kpis.kpis3 .kpi strong{font-size:1.45rem}.kpis.kpis3 .kpi span{font-size:.78rem}.seg button{font-size:.88rem}}
@@ -310,6 +317,7 @@ table.couts td.n svg{vertical-align:-1px}
 <script src="filaments.js"></script>
 <script>
 /* ---------- Données ---------- */
+const VENTES=false; // passer à true pour réafficher l'onglet Ventes
 const COLS=["projets","articles","leurres","refs","fabrications","photos","mouvements","essais","reglages","ventes","sorties","lots","factures","inventaires","depenses"];
 const S=Object.fromEntries(COLS.map(c=>[c,[]]));
 let view="accueil", filtre="tous", store=null, refSel=null;
@@ -453,7 +461,7 @@ function vAccueil(){
   const bas=stockBas(), actifs=S.projets.filter(p=>p.statut==="En cours");
   const valeur=S.articles.reduce((s,a)=>s+valeurArt(a),0);
   const now=new Date(),fabMois=S.fabrications.filter(f=>{const d=new Date(f.date);return d.getFullYear()===now.getFullYear()&&d.getMonth()===now.getMonth()}).reduce((s,f)=>s+(Number(f.n)||0),0);
-  const taches=S.projets.flatMap(p=>(p.taches||[]).filter(t=>!t.fait).map(t=>({...t,p})));
+  const taches=S.projets.flatMap(p=>(p.taches||[]).filter(t=>!t.fait).map(t=>({...t,p}))).sort((a,b)=>(a.prio||2)-(b.prio||2));
   return head("Accueil",`<div style="display:flex;gap:.5rem;flex-wrap:wrap">${OD.pca&&!OD.compte()?`<button class="btn ghost sm" onclick="OD.connecter()">Connecter OneDrive</button>`:""}<button class="btn ghost sm" onclick="editReglages()">Réglages</button><button class="btn ghost sm" onclick="exporter()">Exporter</button><button class="btn ghost sm" onclick="logout()">Déconnexion</button></div>`)+bandeauExport()+`
   <div class="kpis">
     <div class="kpi"><strong>${actifs.length}</strong><span>projets en cours</span></div>
@@ -461,13 +469,13 @@ function vAccueil(){
     <div class="kpi ${bas.length?"warn":""}"><strong>${bas.length}</strong><span>articles sous le seuil</span></div>
     <div class="kpi"><strong class="num">${eur(valeur)}</strong><span>valeur du stock</span></div>
     <div class="kpi"><strong>${fabMois}</strong><span>leurres fabriqués ce mois</span></div>
-    ${(()=>{const n=S.ventes.filter(v=>!v.payee||(!v.expediee&&v.livraison!=="main")).length;return n?`<div class="kpi warn" style="cursor:pointer" onclick="view='ventes';ventesOnglet='ventes';render()"><strong>${n}</strong><span>ventes à traiter</span></div>`:""})()}
+    ${(()=>{if(!VENTES)return"";const n=S.ventes.filter(v=>!v.payee||(!v.expediee&&v.livraison!=="main")).length;return n?`<div class="kpi warn" style="cursor:pointer" onclick="view='ventes';ventesOnglet='ventes';render()"><strong>${n}</strong><span>ventes à traiter</span></div>`:""})()}
   </div>
   <section class="block"><h2>À réapprovisionner</h2><div class="list">${
     bas.length?bas.map(a=>`<div class="row click" onclick="editArticle('${a.id}')"><div class="grow">${dot(a)}${esc(nomArt(a))}<div class="sub">${esc(a.fournisseur||"Fournisseur non renseigné")}</div></div><span class="num pill alert">${fmt(a.qte)} / ${fmt(a.seuil)} ${esc(a.unite)}</span></div>`).join("")
     :`<div class="empty">Tout le stock est au-dessus des seuils.</div>`}</div></section>
   <section class="block"><h2>Prochaines tâches</h2><div class="list">${
-    taches.length?taches.slice(0,8).map(t=>`<div class="row"><input type="checkbox" aria-label="Terminer" onchange="cocher('${t.p.id}','${t.id}')"><div class="grow">${esc(t.txt)}<div class="sub">${esc(t.p.nom)}</div></div></div>`).join("")
+    taches.length?taches.slice(0,8).map(t=>`<div class="row"><input type="checkbox" aria-label="Terminer" onchange="cocher('${t.p.id}','${t.id}')"><div class="grow">${esc(t.txt)}<div class="sub">${esc(t.p.nom)}</div></div><span class="prio p${t.prio||2}">${PRIO[t.prio||2]}</span></div>`).join("")
     :`<div class="empty">Aucune tâche ouverte. Ajoute un projet pour commencer.</div>`}</div></section>`;
 }
 
@@ -547,9 +555,9 @@ function ongletsStock(){const nb=S.articles.filter(a=>niveau(a).k!=="ok").length
 function vJournal(){
   const L=S.mouvements.filter(m=>jrnMotif==="tous"||m.motif===jrnMotif).sort((a,b)=>b.date.localeCompare(a.date));
   const mois=new Date();const ceMois=S.mouvements.filter(m=>{const d=new Date(m.date);return m.motif==="achat"&&d.getMonth()===mois.getMonth()&&d.getFullYear()===mois.getFullYear()}).reduce((s,m)=>s+(Number(m.cout)||0),0);
-  return head("Stock")+ongletsStock()+`<div class="filters" style="margin-top:.75rem">${["tous",...Object.keys(MOTIFS)].map(k=>`<button aria-pressed="${jrnMotif===k}" onclick="jrnMotif='${k}';render()">${k==="tous"?"Tous":MOTIFS[k]}</button>`).join("")}</div>
+  return head("Stock",btnVerrou())+ongletsStock()+`<div class="filters" style="margin-top:.75rem">${["tous",...Object.keys(MOTIFS)].map(k=>`<button aria-pressed="${jrnMotif===k}" onclick="jrnMotif='${k}';render()">${k==="tous"?"Tous":MOTIFS[k]}</button>`).join("")}</div>
   <p class="sub">Achats ce mois-ci : <b class="num">${eur(ceMois)}</b>. Le journal garde les 1 500 derniers mouvements.</p>
-  <div class="list" style="padding:.25rem .75rem">${L.length?L.slice(0,300).map(ligneMvt).join(""):`<div class="empty">Aucun mouvement. Chaque +, −, achat, fabrication ou correction de quantité s'enregistre ici.</div>`}</div>`;
+  <p class="sub">${stockVerrou?"Ouvre le cadenas pour supprimer un mouvement : le stock est corrigé automatiquement.":"Cadenas ouvert : × supprime le mouvement et corrige le stock."}</p><div class="list jrn" style="padding:.25rem .75rem">${L.length?L.slice(0,300).map(x=>ligneMvt(x,true)).join(""):`<div class="empty">Aucun mouvement. Chaque +, −, achat, fabrication ou correction de quantité s'enregistre ici.</div>`}</div>`;
 }
 /* ---------- Lots matière : chaque achat garde son prix, consommation des plus anciens d'abord ---------- */
 const r2=x=>Math.round((Number(x)||0)*100)/100,r3=x=>Math.round((Number(x)||0)*1000)/1000;
@@ -764,7 +772,7 @@ function ficheProduit(id){
   const vb=$("#viewerBody");
   vb.innerHTML=`<h2>${esc(l.nom)} <span class="pill">${esc(l.version||"V1")}</span></h2>
   <div class="kpis kpis3" style="margin:0"><div class="kpi"><strong class="num">${Math.max(0,d)}</strong><span>en stock</span></div><div class="kpi"><strong class="num">${fabTot(id)}</strong><span>fabriqués</span></div><div class="kpi"><strong class="num">${venduTot(id)}</strong><span>vendus</span></div></div>
-  <div class="actions" style="justify-content:flex-start"><button class="btn" ${d>0?"":"disabled"} onclick="viewer.close();editVente(null,'${id}')">Vendre</button><button class="btn ghost" ${d>0?"":"disabled"} onclick="editSortie('${id}')">Sortie hors vente</button><button class="btn ghost" onclick="viewer.close();editLeurre('${id}')">Fiche leurre</button></div>
+  <div class="actions" style="justify-content:flex-start">${VENTES?`<button class="btn" ${d>0?"":"disabled"} onclick="viewer.close();editVente(null,'${id}')">Vendre</button>`:""}<button class="btn ghost" ${d>0?"":"disabled"} onclick="editSortie('${id}')">Sortie hors vente</button><button class="btn ghost" onclick="viewer.close();editLeurre('${id}')">Fiche leurre</button></div>
   <div id="sortieForm"></div>
   ${blocs.some(b=>b.n)?`<section id="fpLots"><div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem"><h3 style="margin-bottom:.3rem">En stock par coloris et par lot</h3>${btnVerrou(`ficheProduit('${id}')`)}</div>${blocs.filter(b=>b.n).map(b=>`<div class="mv" style="grid-template-columns:1fr auto"><span class="mv-n"><b>${esc(b.c||"Sans coloris")}</b></span><span class="mv-q ${b.n<0?"st-crit":""}">${b.n}</span></div>${b.lots.filter(x=>x.reste>0).map(x=>`<div class="mv" style="grid-template-columns:1fr auto auto"><span class="mv-n">lot ${esc(lotDe(x.f))}<small>${x.reste} en stock à ${eur(cuFab(x.f))} · fabriqué le ${new Date(x.f.date).toLocaleDateString("fr-FR")}</small></span><span></span><button class="btn ghost sm" ${stockVerrou?"disabled":""} onclick="annulerProd('${x.f.prodId||x.f.id}')">Supprimer le lot</button></div>`).join("")}`).join("")}<p class="sub" style="margin:.3rem 0 0">Supprimer un lot retire ses leurres et remet la matière dans les bobines. Impossible si une pièce du lot est déjà vendue.</p></section>`:""}
   <section><h3 style="margin-bottom:.3rem">Historique</h3><div>${ev.length?ev.map(e=>`<div class="mv" style="grid-template-columns:4.6rem 1fr auto auto"><span class="mv-d">${e.date?new Date(e.date).toLocaleDateString("fr-FR"):""}</span><span class="mv-n">${esc(e.t)}${e.s?`<small>${e.s}</small>`:""}</span><span class="mv-q ${e.q>0?"st-ok":""}">${e.q>0?"+":e.q<0?"−":""}${Math.abs(e.q)}</span>${e.sid?`<button class="btn ghost sm" onclick="annulerSortie('${e.sid}')">Annuler</button>`:"<span></span>"}</div>`).join(""):`<p class="sub">Aucun mouvement.</p>`}</div></section>
@@ -979,7 +987,18 @@ function toast(t,action){const e=$("#toast");e.textContent=t;e.classList.toggle(
   if(action){const b=document.createElement("button");b.textContent=action.label;b.onclick=()=>{e.classList.remove("show","act");clearTimeout(e._t);action.fn()};e.appendChild(b)}
   e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show","act"),action?6000:2200)}
 const dernierAppui={};
-const MOTIFS={achat:"Achat",sortie:"Sortie",fabrication:"Fabrication",annulation:"Annulation",correction:"Correction",initial:"Stock initial",perte:"Perte / casse",rebut:"Impression ratée",inventaire:"Inventaire"};
+async function supprMvt(id){if(stockVerrou){toast("Déverrouille d'abord avec le cadenas");return}const m=S.mouvements.find(x=>x.id===id);if(!m)return;
+  if(["fabrication","rebut"].includes(m.motif)&&m.ref&&S.fabrications.some(f=>(f.prodId||f.id)===m.ref)){toast("Ce mouvement vient d'une production : supprime le lot dans Projets > Leurres > Historique.");return}
+  if(m.motif==="impression"&&S.projets.some(p=>(p.impressions||[]).some(i=>i.id===m.ref))){toast("Ce mouvement vient d'une impression de projet : supprime-la depuis le projet.");return}
+  const a=art(m.articleId);if(!confirm(`Supprimer « ${MOTIFS[m.motif]||m.motif} ${m.delta>0?"+":"−"}${fmt(Math.abs(m.delta))} ${m.unite||""} ${m.nom} » ? Le stock sera corrigé.`))return;
+  const ops=[{op:"del",c:"mouvements",id}];
+  if(a){if(m.delta>0){const L=(m.lots||[]).filter(x=>x.lotId);
+      for(const x of L){const lot=S.lots.find(l=>l.id===x.lotId);if(!lot)continue;if(Number(lot.reste)+1e-9<Number(x.q)){toast("Ce lot a déjà été en partie utilisé : impossible d'annuler l'entrée. Corrige plutôt la quantité dans l'article.");return}
+        if(Math.abs(Number(lot.qte0)-Number(x.q))<1e-6)ops.push({op:"del",c:"lots",id:lot.id});else ops.push({op:"incf",c:"lots",id:lot.id,f:"reste",d:-r3(x.q)},{op:"incf",c:"lots",id:lot.id,f:"qte0",d:-r3(x.q)})}
+      if(L.length)ops.push({op:"inc",c:"articles",id:a.id,d:-r3(m.delta)});else ops.push(...opsSortie(a,m.delta,"correction").ops.filter(o=>o.c!=="mouvements"))}
+    else ops.push(...opsRetour(a,(m.lots||[]).length?m.lots:[{lotId:"",q:-m.delta,pu:pu(a)}]))}
+  try{await store.batch(ops);toast("Mouvement supprimé, stock corrigé")}catch(e){toast("Échec ("+(e.code||"erreur")+")")}}
+const MOTIFS={achat:"Achat",sortie:"Sortie",fabrication:"Fabrication",annulation:"Annulation",correction:"Correction",initial:"Stock initial",perte:"Perte / casse",rebut:"Impression ratée",inventaire:"Inventaire",impression:"Impression projet"};
 function mvt(a,delta,motif,x={}){return{op:"set",c:"mouvements",id:uid(),data:{date:new Date().toISOString(),articleId:a.id,nom:nomArt(a),categorie:a.categorie||"",delta:Math.round(delta*1000)/1000,unite:a.unite||"",motif,cout:x.cout??null,projetId:x.projetId||"",ref:x.ref||""}}}
 async function lancer(ops,ok,undoOps){try{await store.batch(ops);toast(ok,undoOps?{label:"Annuler",fn:()=>store.batch(undoOps).then(()=>toast("Annulé")).catch(e=>toast("Échec : "+(e.code||"erreur")))}:undefined)}catch(e){toast("Échec : "+(e.code||"erreur"))}}
 function bouger(id,sens){if(stockVerrou){toast("Déverrouille d'abord avec le cadenas");return}const a=art(id);if(!a)return;
@@ -993,7 +1012,7 @@ function cocher(pid,tid){const p=S.projets.find(x=>x.id===pid);if(!p)return;
   upd("projets",pid,{taches:p.taches.map(t=>t.id===tid?{...t,fait:true}:t)});toast("Tâche terminée")}
 
 const dlg=$("#dlg"),body=$("#dlgBody");
-fermable(dlg);fermable($("#viewer"));
+fermable(dlg);fermable($("#viewer"));if(!VENTES)document.querySelector('nav .tab[data-view="ventes"]')?.remove();
 const opt=(arr,v)=>arr.map(o=>`<option ${o===v?"selected":""}>${esc(o)}</option>`).join("");
 const val=id=>document.getElementById(id).value.trim();
 const pnum=v=>{const n=parseFloat(String(v??"").replace(/\s/g,"").replace(",","."));return isFinite(n)?n:0};
@@ -1077,8 +1096,8 @@ async function enregistrerAchat(id){const a=art(id);if(!a)return;
 }
 function blocMvts(id){const m=S.mouvements.filter(x=>x.articleId===id).sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8);
   return`<details class="bloc"><summary>Derniers mouvements${m.length?` (${m.length}${m.length===8?"+":""})`:""}</summary>${m.length?`<div style="margin-top:.5rem">${m.map(ligneMvt).join("")}</div>`:`<p class="sub">Aucun mouvement enregistré pour cet article.</p>`}</details>`}
-function ligneMvt(x){const pr=x.projetId?S.projets.find(p=>p.id===x.projetId):null;
-  return`<div class="mv"><span class="mv-d">${new Date(x.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"})}</span><span class="mv-n">${esc(x.nom)}<small>${esc(MOTIFS[x.motif]||x.motif)}${pr?", "+esc(pr.nom):""}</small></span><span class="mv-q num ${x.delta>0?"st-ok":"st-crit"}">${x.delta>0?"+":"−"}${fmt(Math.abs(x.delta))} ${esc(x.unite)}</span><span class="mv-c num">${x.cout?eur(x.cout):""}</span></div>`}
+function ligneMvt(x,del){const pr=x.projetId?S.projets.find(p=>p.id===x.projetId):null;
+  return`<div class="mv"><span class="mv-d">${new Date(x.date).toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"2-digit"})}</span><span class="mv-n">${esc(x.nom)}<small>${esc(MOTIFS[x.motif]||x.motif)}${pr?", "+esc(pr.nom):""}</small></span><span class="mv-q num ${x.delta>0?"st-ok":"st-crit"}">${x.delta>0?"+":"−"}${fmt(Math.abs(x.delta))} ${esc(x.unite)}</span><span class="mv-c num">${x.cout?eur(x.cout):""}</span>${del?`<button class="x" ${stockVerrou?"disabled":""} aria-label="Supprimer ce mouvement" title="Supprimer et corriger le stock" onclick="supprMvt('${x.id}')">×</button>`:""}</div>`}
 function majArtCalc(){
   const c=CATCFG[$("#f_cat").value],u=$("#f_unite").value,L=num("f_lot"),P=num("f_plot"),Q=num("f_qte");
   document.querySelectorAll("#artForm .u").forEach(e=>e.textContent=u);
@@ -1097,7 +1116,7 @@ const nbLiens=o=>{const n=(o.liens||[]).length;return n?" · "+n+" lien"+(n>1?"s
 let tmpTaches=[];
 function editProjet(id,dom){
   const p=S.projets.find(x=>x.id===id)||{statut:"Idée",domaine:dom||"Autre",taches:[]};
-  tmpTaches=JSON.parse(JSON.stringify(p.taches||[]));tmpLiens=JSON.parse(JSON.stringify(p.liens||[]));tmpDep=JSON.parse(JSON.stringify(p.depenses||[]));
+  tmpTaches=JSON.parse(JSON.stringify(p.taches||[]));tmpLiens=JSON.parse(JSON.stringify(p.liens||[]));tmpDep=JSON.parse(JSON.stringify(p.depenses||[]));tmpCT=ctMigrer(JSON.parse(JSON.stringify(p.conception||null)));
   body.innerHTML=`<h2>${id?"Modifier le projet":"Nouveau projet"}</h2>
   ${id?`<button type="button" class="btn ghost" style="align-self:flex-start" onclick="ouvrirConception('${id}')">Besoins et solutions${ctHasData(p.conception)?" ("+((p.conception.besoins||p.conception.fonctions||[]).length)+")":""}</button>`:`<p class="sub" style="margin:0">Après l'enregistrement, ouvre le projet pour lister les besoins du produit et leurs solutions.</p>`}
   <label>Nom<input id="f_nom" value="${esc(p.nom)}" placeholder="Stickbait 140 mm thon"></label>
@@ -1105,16 +1124,18 @@ function editProjet(id,dom){
   <label>Statut<select id="f_stat">${opt(STATUTS,p.statut)}</select></label>
   <label>Budget (€)<input id="f_bud" type="text" inputmode="decimal" autocomplete="off" value="${vIn(p.budget??"")}"></label>
   <label>Échéance<input id="f_ech" type="date" value="${esc(p.echeance)}"></label></div>
+  <div class="bloc"><h3 style="margin-bottom:.4rem">Aperçu</h3><div id="apercu"></div></div>
+  <div><h3 style="margin-bottom:.4rem">Idées en vrac</h3><div class="ct-add"><input id="id_new" placeholder="Une idée… puis Entrée" onkeydown="if(event.key==='Enter'){event.preventDefault();ajIdee()}" aria-label="Nouvelle idée"><button type="button" class="btn ghost" onclick="ajIdee()">Noter</button></div><div id="idees" style="display:flex;flex-direction:column;gap:.35rem;margin-top:.5rem"></div></div>
   <div><h3 style="margin-bottom:.4rem">Tâches</h3><div id="taches" style="display:flex;flex-direction:column;gap:.4rem"></div>
-  <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpTaches.push({id:uid(),txt:'',fait:false});drawTaches(true)">Ajouter une tâche</button></div>
+  <button class="btn ghost sm" style="margin-top:.5rem" onclick="tmpTaches.push({id:uid(),txt:'',fait:false,prio:2});drawTaches(true)">Ajouter une tâche</button></div>
   ${id?blocImpressions(p):`<p class="sub" style="margin:0">Les impressions 3D se renseignent une fois le projet enregistré.</p>`}
   ${id?blocDepenses(p):`<div class="bloc-in"><h3 style="margin-bottom:.4rem">Dépenses</h3><div id="deps"></div><button type="button" class="btn ghost sm" style="margin-top:.5rem" onclick="tmpDep.push({id:uid(),date:new Date().toISOString().slice(0,10),nom:'',montant:''});drawDeps(true)">Ajouter une dépense</button></div>`}
   ${blocLiens()}
   ${mediaBlock()}
   <label>Notes<textarea id="f_notes">${esc(p.notes)}</textarea></label>`+actions("projets",id);
-  drawTaches();drawDeps();drawLiens();drawMedia("projets",id);
+  drawTaches();drawIdees();drawApercu();drawDeps();drawLiens();drawMedia("projets",id);
   wire("projets",id,()=>{if(!val("f_nom")){toast("Donne un nom au projet");return}
-    return{id:p.id||uid(),nom:val("f_nom"),domaine:val("f_dom"),statut:val("f_stat"),budget:num("f_bud"),echeance:val("f_ech"),notes:val("f_notes"),taches:tmpTaches.filter(t=>t.txt.trim()),liens:liensSaisis(),depenses:tmpDep.filter(d=>(d.nom||"").trim()||pnum(d.montant)).map(d=>({id:d.id||uid(),date:d.date||"",nom:(d.nom||"").trim(),montant:pnum(d.montant)}))}});
+    return{id:p.id||uid(),nom:val("f_nom"),domaine:val("f_dom"),statut:val("f_stat"),budget:num("f_bud"),echeance:val("f_ech"),notes:val("f_notes"),taches:tmpTaches.filter(t=>t.txt.trim()).map(t=>({...t,prio:t.prio||2})),conception:{...tmpCT,vrac:tmpCT.vrac.filter(x=>(x.txt||"").trim())},liens:liensSaisis(),depenses:tmpDep.filter(d=>(d.nom||"").trim()||pnum(d.montant)).map(d=>({id:d.id||uid(),date:d.date||"",nom:(d.nom||"").trim(),montant:pnum(d.montant)}))}});
   dlg.showModal();
 }
 let tmpDep=[];
@@ -1223,21 +1244,24 @@ function operations(){const O=[];
   S.mouvements.filter(m=>m.motif==="achat"&&Number(m.cout)>0&&!m.lots).forEach(m=>O.push({date:m.date,type:"achat",lib:m.nom+" ("+fmt(m.delta)+" "+(m.unite||"")+")",cat:m.categorie||"Stock",four:"",m:-Number(m.cout),act:""}));
   S.depenses.forEach(d=>O.push({date:d.date,type:"depense",lib:d.libelle,cat:d.categorie||"Autre",four:d.fournisseur,proj:S.projets.find(p=>p.id===d.projetId)?.nom,m:-Number(d.montant||0),act:`editDepense('${d.id}')`}));
   S.projets.forEach(p=>(p.depenses||[]).filter(d=>Number(d.montant)).forEach(d=>O.push({date:d.date||"",type:"depense",lib:d.nom,cat:"Projets",proj:p.nom,m:-Number(d.montant),act:`editProjet('${p.id}')`})));
-  S.ventes.forEach(v=>{O.push({date:v.date,type:"vente",lib:`${v.nom} ${v.version||""}${v.coloris?" "+v.coloris:""} × ${v.qte}`,cat:"Ventes",four:v.canal+(v.client?", "+v.client:""),m:ca(v),act:`editVente('${v.id}')`});
+  if(VENTES)S.ventes.forEach(v=>{O.push({date:v.date,type:"vente",lib:`${v.nom} ${v.version||""}${v.coloris?" "+v.coloris:""} × ${v.qte}`,cat:"Ventes",four:v.canal+(v.client?", "+v.client:""),m:ca(v),act:`editVente('${v.id}')`});
     const fr=(Number(v.commission)||0)+(Number(v.port)||0);if(fr)O.push({date:v.date,type:"depense",lib:`Frais de vente : ${v.nom}`,cat:"Frais de vente",four:v.canal,m:-fr,act:`editVente('${v.id}')`})});
   return O.filter(o=>o.date).sort((a,b)=>String(b.date).localeCompare(String(a.date)))}
-function vComptes(){const all=operations(),ans=[...new Set(all.map(o=>String(o.date).slice(0,4)).concat([String(new Date().getFullYear())]))].sort().reverse();
+let cptOnglet="dep";
+function vComptes(){const segC=`<div class="seg" role="group" aria-label="Section"><button aria-pressed="${cptOnglet==="dep"}" onclick="cptOnglet='dep';render()">Dépenses</button><button aria-pressed="${cptOnglet==="prod"}" onclick="cptOnglet='prod';render()">Coût de production</button></div>`;
+  if(cptOnglet==="prod")return head("Comptes")+segC+vCoutProd();
+  const all=operations(),ans=[...new Set(all.map(o=>String(o.date).slice(0,4)).concat([String(new Date().getFullYear())]))].sort().reverse();
   const P=all.filter(o=>String(o.date).startsWith(cptAn+(cptMois?"-"+cptMois:""))),L=P.filter(o=>cptType==="tout"||o.type===cptType);
   const dep=-P.filter(o=>o.m<0).reduce((s,o)=>s+o.m,0),rec=P.filter(o=>o.m>0).reduce((s,o)=>s+o.m,0),sol=rec-dep;
   const parCat={};P.filter(o=>o.m<0).forEach(o=>parCat[o.cat]=(parCat[o.cat]||0)-o.m);const C=Object.entries(parCat).sort((a,b)=>b[1]-a[1]),mx=Math.max(1,...C.map(c=>c[1]));
   const MOIS=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-  return head("Comptes",`<div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" onclick="exporterComptes()">Export CSV</button><button class="btn" onclick="editDepense()">Nouvelle dépense</button></div>`)+
+  return head("Comptes",`<div style="display:flex;gap:.5rem;flex-wrap:wrap"><button class="btn ghost" onclick="exporterComptes()">Export CSV</button><button class="btn" onclick="editDepense()">Nouvelle dépense</button></div>`)+segC+
   `<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem"><select style="width:auto" onchange="cptAn=this.value;render()" aria-label="Année">${ans.map(a=>`<option ${a===cptAn?"selected":""}>${a}</option>`).join("")}</select><select style="width:auto" onchange="cptMois=this.value;render()" aria-label="Mois"><option value="">Toute l'année</option>${MOIS.map((m,i)=>`<option value="${String(i+1).padStart(2,"0")}" ${cptMois===String(i+1).padStart(2,"0")?"selected":""}>${m}</option>`).join("")}</select></div>
-  <div class="kpis kpis3"><div class="kpi"><strong class="num">${eur(dep)}</strong><span>dépensé</span></div><div class="kpi"><strong class="num">${eur(rec)}</strong><span>encaissé (ventes)</span></div><div class="kpi"><strong class="num ${sol<0?"st-crit":"st-ok"}">${sol<0?"−":"+"} ${eur(Math.abs(sol))}</strong><span>solde</span></div></div>
+  ${VENTES?`<div class="kpis kpis3"><div class="kpi"><strong class="num">${eur(dep)}</strong><span>dépensé</span></div><div class="kpi"><strong class="num">${eur(rec)}</strong><span>encaissé (ventes)</span></div><div class="kpi"><strong class="num ${sol<0?"st-crit":"st-ok"}">${sol<0?"−":"+"} ${eur(Math.abs(sol))}</strong><span>solde</span></div></div>`:`<div class="kpis kpis3"><div class="kpi"><strong class="num">${eur(dep)}</strong><span>dépensé</span></div><div class="kpi"><strong class="num">${eur(-P.filter(o=>o.type==="achat").reduce((s,o)=>s+o.m,0))}</strong><span>dont achats de stock</span></div><div class="kpi"><strong class="num">${eur(-P.filter(o=>o.type==="depense").reduce((s,o)=>s+o.m,0))}</strong><span>autres dépenses</span></div></div>`}
   ${C.length?`<section class="block"><h2>Dépenses par catégorie</h2><div class="pan" style="gap:.2rem">${C.map(([c,v])=>`<div class="vc" title="${esc(c)} : ${eur(v)}"><span>${esc(c)}</span><div class="vc-t"><i style="width:${Math.max(2,v/mx*100)}%"></i></div><span class="num">${eur(v)}</span></div>`).join("")}</div></section>`:""}
-  <div class="filters">${[["tout","Tout"],["achat","Achats de stock"],["depense","Autres dépenses"],["vente","Ventes"]].map(([k,t])=>`<button aria-pressed="${cptType===k}" onclick="cptType='${k}';render()">${t}</button>`).join("")}</div>
+  <div class="filters">${[["tout","Tout"],["achat","Achats de stock"],["depense","Autres dépenses"],...(VENTES?[["vente","Ventes"]]:[])].map(([k,t])=>`<button aria-pressed="${cptType===k}" onclick="cptType='${k}';render()">${t}</button>`).join("")}</div>
   <div class="list">${L.length?L.slice(0,400).map(o=>`<div class="row ${o.act?"click":""}" ${o.act?`onclick="${o.act}"`:""}><div class="grow">${esc(o.lib)}<div class="sub">${new Date(o.date).toLocaleDateString("fr-FR")} · ${esc(o.cat)}${o.four?" · "+esc(o.four):""}${o.proj?" · projet "+esc(o.proj):""}${o.ref?" · facture "+esc(o.ref):""}</div></div><span class="num ${o.m<0?"st-crit":"st-ok"}">${o.m<0?"−":"+"} ${eur(Math.abs(o.m))}</span></div>`).join(""):`<div class="empty">Aucune opération sur cette période.</div>`}</div>
-  <p class="sub">Les achats de stock viennent des lots (achats, factures importées). Les ventes et leurs frais viennent de l'onglet Ventes. Ajoute ici tout le reste : outils, pièces de l'imprimante, abonnements…</p>`}
+  <p class="sub">Les achats de stock viennent des lots (achats, factures importées). Ajoute ici tout le reste : outils, pièces de l'imprimante, abonnements…</p>`}
 function editDepense(id){const d=S.depenses.find(x=>x.id===id)||{date:new Date().toISOString().slice(0,10),categorie:"Outillage"};
   body.innerHTML=`<h2>${id?"Modifier la dépense":"Nouvelle dépense"}</h2>
   <div class="grid2"><label>Date<input id="dp_d" type="date" value="${esc((d.date||"").slice(0,10))}"></label><label>Montant payé (€)<input id="dp_m" type="text" inputmode="decimal" value="${vIn(d.montant??"")}"></label>
@@ -1299,7 +1323,7 @@ function ctVrac(){const V=CT.vrac||[];
   return`<details class="bloc ct-vrac" ${V.length?"open":""}><summary>Idées en vrac${V.length?` (${V.length})`:""}</summary>
   <p class="sub" style="margin:.4rem 0">Pour tout noter sans réfléchir à où ça va. Range ensuite chaque idée comme solution d'un besoin, ou fais-en un besoin.</p>
   <div class="ct-add"><input id="ct_vr" placeholder="Une idée… puis Entrée" onkeydown="if(event.key==='Enter'){event.preventDefault();ctAjVrac(this.value)}" aria-label="Nouvelle idée"><button class="btn ghost" onclick="ctAjVrac($('#ct_vr').value)">Noter</button></div>
-  ${V.length?`<div class="ct-vl">${V.map(i=>`<div class="ct-vi"><span>${esc(i.txt)}</span><select onchange="ctRanger('${i.id}',this.value)" aria-label="Ranger l'idée"><option value="">Ranger…</option><option value="__besoin">En faire un besoin</option>${CT.besoins.length?`<optgroup label="Solution pour :">${CT.besoins.map(b=>`<option value="${b.id}">${esc((b.titre||"(sans titre)").slice(0,40))}</option>`).join("")}</optgroup>`:""}</select><button class="x" onclick="CT.vrac=CT.vrac.filter(x=>x.id!=='${i.id}');ctSave(true)" aria-label="Supprimer l'idée">×</button></div>`).join("")}</div>`:""}</details>`}
+  ${V.length?`<div class="ct-vl">${V.map(i=>`<div class="ct-vi"><input value="${esc(i.txt)}" oninput="CT.vrac.find(x=>x.id==='${i.id}').txt=this.value;ctSave()" aria-label="Idée"><select onchange="ctRanger('${i.id}',this.value)" aria-label="Ranger l'idée"><option value="">Ranger…</option><option value="__tache">En faire une tâche</option><option value="__besoin">En faire un besoin</option>${CT.besoins.length?`<optgroup label="Solution pour :">${CT.besoins.map(b=>`<option value="${b.id}">${esc((b.titre||"(sans titre)").slice(0,40))}</option>`).join("")}</optgroup>`:""}</select><button class="x" onclick="CT.vrac=CT.vrac.filter(x=>x.id!=='${i.id}');ctSave(true)" aria-label="Supprimer l'idée">×</button></div>`).join("")}</div>`:""}</details>`}
 function ctCarte(b){const r=bsRetenues(b),S_=b.solutions||[];
   return`<div class="bs-card bs-i${b.imp||2} ${r.length?"bs-ok":""}">
   <div class="bs-h"><textarea class="bs-t" rows="1" oninput="bsB('${b.id}').titre=this.value;ctSave()" aria-label="Besoin" placeholder="Besoin">${esc(b.titre)}</textarea><button class="x" onclick="ctSupBesoin('${b.id}')" aria-label="Supprimer le besoin">×</button></div>
@@ -1318,6 +1342,7 @@ function ctAjSol(bid,t){t=String(t||"").trim();if(!t)return;(bsB(bid).solutions?
 function ctChoisir(bid,sid){const s=ctSol(bid,sid);s.choisie=!s.choisie;ctSave(true)}
 function ctAjVrac(t){t=String(t||"").trim();if(!t)return;(CT.vrac??=[]).push({id:uid(),txt:t});ctSave();ctRender("#ct_vr")}
 function ctRanger(iid,dest){const i=CT.vrac.find(x=>x.id===iid);if(!i||!dest)return;
+  if(dest==="__tache"){const p=S.projets.find(x=>x.id===ctPid);CT.vrac=CT.vrac.filter(x=>x.id!==iid);clearTimeout(ctTimer);ctTimer=null;upd("projets",ctPid,{conception:CT,taches:[...(p?.taches||[]),{id:uid(),txt:i.txt,fait:false,prio:2}]}).then(()=>{toast("Idée transformée en tâche");ctRender()});return}
   if(dest==="__besoin")CT.besoins.push({id:uid(),titre:i.txt,objectif:"",imp:2,solutions:[],valide:""});else(bsB(dest).solutions??=[]).push({id:uid(),txt:i.txt,choisie:false});
   CT.vrac=CT.vrac.filter(x=>x.id!==iid);ctSave(true);toast(dest==="__besoin"?"Besoin créé":"Rangé comme solution")}
 const ctSynthese=()=>`${S.projets.find(x=>x.id===ctPid)?.nom||""}\n${CT.besoin?"Le produit doit "+CT.besoin+"\n":""}\n`+CT.besoins.map(b=>{const r=bsRetenues(b);return`- ${b.titre} (${IMP[b.imp||2]})${b.objectif?" | objectif : "+b.objectif:""}\n  → ${r.length?r.map(s=>s.txt).join(" + "):"à trouver"}`}).join("\n");
@@ -1339,8 +1364,28 @@ function glisser(e,cle){const h=e.currentTarget,row=h.closest("[data-i]"),list=r
   h.addEventListener("pointermove",mv);h.addEventListener("pointerup",fin);h.addEventListener("pointercancel",fin)}
 function glisserClavier(e,cle,i){const d=e.key==="ArrowUp"?-1:e.key==="ArrowDown"?1:0;if(!d)return;e.preventDefault();const L=LISTES_TRIABLES[cle],a=[...L.arr()],j=i+d;if(j<0||j>=a.length)return;
   [a[i],a[j]]=[a[j],a[i]];L.set(a);L.draw();const z=document.querySelectorAll(`#${cle} .poignee`)[j];z&&z.focus();const dl=z?.closest("dialog");if(dl)dl._sale=true}
+/* ---------- Projet : idées → tâches, priorités, aperçu ---------- */
+const PRIO={1:"Haute",2:"Moyenne",3:"Basse"};
+let tmpCT=null;
+function drawIdees(focus){const z=$("#idees");if(!z)return;const I=tmpCT.vrac;
+  z.innerHTML=I.length?I.map((x,i)=>`<div class="idee"><input value="${esc(x.txt)}" oninput="tmpCT.vrac[${i}].txt=this.value" aria-label="Idée"><button type="button" class="btn ghost sm" onclick="ideeVers(${i},'tache')">→ Tâche</button><button type="button" class="btn ghost sm" onclick="ideeVers(${i},'besoin')">→ Besoin</button><button type="button" class="x" aria-label="Supprimer l'idée" onclick="tmpCT.vrac.splice(${i},1);drawIdees();drawApercu();dlg._sale=true">×</button></div>`).join(""):`<p class="sub" style="margin:0">Aucune idée en vrac. Note ici tout ce qui te passe par la tête, tu le transformeras ensuite.</p>`;
+  if(focus){const l=z.querySelectorAll("input");l[l.length-1]?.focus()}}
+function ajIdee(){const i=$("#id_new"),v=i.value.trim();if(!v)return;tmpCT.vrac.push({id:uid(),txt:v});i.value="";drawIdees();drawApercu();dlg._sale=true;i.focus()}
+function ideeVers(i,quoi){const x=tmpCT.vrac.splice(i,1)[0];if(!x)return;
+  if(quoi==="tache"){tmpTaches.push({id:uid(),txt:x.txt,fait:false,prio:2});drawTaches()}else tmpCT.besoins.push({id:uid(),titre:x.txt,objectif:"",imp:2,solutions:[],valide:""});
+  drawIdees();drawApercu();dlg._sale=true;toast(quoi==="tache"?"Idée transformée en tâche":"Idée transformée en besoin (Besoins et solutions)")}
+function tacheVersIdee(i){const t=tmpTaches.splice(i,1)[0];if(!t)return;tmpCT.vrac.push({id:uid(),txt:t.txt});drawTaches();drawIdees();drawApercu();dlg._sale=true}
+function drawApercu(){const z=$("#apercu");if(!z||!tmpCT)return;const T=tmpTaches.filter(t=>(t.txt||"").trim()),af=T.filter(t=>!t.fait),ok=T.length-af.length,B=tmpCT.besoins,br=B.filter(b=>bsRetenues(b).length).length,pct=T.length?Math.round(ok/T.length*100):0;
+  const np=k=>af.filter(t=>(t.prio||2)===k).length,next=[...af].sort((a,b)=>(a.prio||2)-(b.prio||2)).slice(0,3);
+  z.innerHTML=`<div class="flux"><div class="fx"><b>${tmpCT.vrac.length}</b><span>idées en vrac</span></div><span class="fx-a" aria-hidden="true">→</span>
+  <div class="fx"><b>${B.length}</b><span>besoins</span><small>${br} avec solution</small></div><span class="fx-a" aria-hidden="true">→</span>
+  <div class="fx fx-af"><b>${af.length}</b><span>tâches à faire</span><small>${np(1)?`<span class="st-crit">${np(1)} haute${np(1)>1?"s":""}</span> · `:""}${np(2)} moy. · ${np(3)} basse${np(3)>1?"s":""}</small></div><span class="fx-a" aria-hidden="true">→</span>
+  <div class="fx fx-ok"><b>${ok}</b><span>faites</span><small>${pct} %</small></div></div>
+  <div class="jg-t" style="margin:.5rem 0 .2rem"><i class="s-${pct===100?"ok":pct>=50?"warn":"crit"}" style="width:${pct}%"></i></div>
+  ${next.length?`<p class="sub" style="margin:.3rem 0 0"><b>Ensuite :</b> ${next.map(t=>`<span class="prio p${t.prio||2}">${PRIO[t.prio||2]}</span> ${esc(t.txt)}`).join(" · ")}</p>`:""}`}
+
 function drawTaches(focus){
-  $("#taches").innerHTML=tmpTaches.map((t,i)=>`<div class="task" data-i="${i}"><button type="button" class="poignee" aria-label="Déplacer la tâche (glisser, ou flèches haut et bas)" onpointerdown="glisser(event,'taches')" onkeydown="glisserClavier(event,'taches',${i})">${ICO_POIGNEE}</button><input type="checkbox" ${t.fait?"checked":""} onchange="tmpTaches[${i}].fait=this.checked" aria-label="Fait"><input type="text" value="${esc(t.txt)}" oninput="tmpTaches[${i}].txt=this.value" placeholder="Décrire la tâche"><button class="x" aria-label="Retirer" onclick="tmpTaches.splice(${i},1);drawTaches()">×</button></div>`).join("");
+  $("#taches").innerHTML=tmpTaches.map((t,i)=>`<div class="task" data-i="${i}"><button type="button" class="poignee" aria-label="Déplacer la tâche (glisser, ou flèches haut et bas)" onpointerdown="glisser(event,'taches')" onkeydown="glisserClavier(event,'taches',${i})">${ICO_POIGNEE}</button><input type="checkbox" ${t.fait?"checked":""} onchange="tmpTaches[${i}].fait=this.checked;drawApercu()" aria-label="Fait"><input type="text" value="${esc(t.txt)}" oninput="tmpTaches[${i}].txt=this.value" onchange="drawApercu()" placeholder="Décrire la tâche"><span class="t-act"><button type="button" class="prio p${t.prio||2}" title="Priorité : toucher pour changer" onclick="tmpTaches[${i}].prio=((tmpTaches[${i}].prio||2)%3)+1;drawTaches();drawApercu();dlg._sale=true">${PRIO[t.prio||2]}</button><button type="button" class="x" title="Renvoyer en idée" aria-label="Renvoyer en idée" onclick="tacheVersIdee(${i})">↺</button><button class="x" aria-label="Retirer" onclick="tmpTaches.splice(${i},1);drawTaches();drawApercu()">×</button></span></div>`).join("");
   if(focus){const ins=$("#taches").querySelectorAll("input[type=text]");ins[ins.length-1]?.focus()}
 }
 
